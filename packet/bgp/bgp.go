@@ -12,6 +12,8 @@
 // implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+// added DNS type
+
 
 package bgp
 
@@ -24,21 +26,39 @@ import (
 	"net"
 	"reflect"
 	"regexp"
+//	"runtime/debug"
 	"strconv"
 	"strings"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 const (
-	AFI_IP     = 1
-	AFI_IP6    = 2
-	AFI_L2VPN  = 25
-	AFI_OPAQUE = 16397
+	AFI_IP        = 1
+	AFI_IP6       = 2
+	AFI_NSAP      = 3
+	AFI_HDLC      = 4
+	AFI_BBN       = 5
+	AFI_802       = 6
+	AFI_E163      = 7
+	AFI_E164      = 8
+	AFI_F69       = 9
+	AFI_X121      = 10
+	AFI_IPX       = 11
+	AFI_APPPLE    = 12
+	AFI_DECNET    = 13
+	AFI_BANYAN    = 14
+	AFI_E164_NSAP = 15
+	AFI_DNS       = 16
+	AFI_L2VPN     = 25
+	AFI_OPAQUE    = 16397
 )
 
 const (
 	SAFI_UNICAST                  = 1
 	SAFI_MULTICAST                = 2
 	SAFI_MPLS_LABEL               = 4
+	SAFI_MCAST_VPN                = 5
 	SAFI_ENCAPSULATION            = 7
 	SAFI_VPLS                     = 65
 	SAFI_EVPN                     = 70
@@ -267,6 +287,7 @@ func (c *DefaultParameterCapability) DecodeFromBytes(data []byte) error {
 }
 
 func (c *DefaultParameterCapability) Serialize() ([]byte, error) {
+	//debug.PrintStack()
 	c.CapLen = uint8(len(c.CapValue))
 	buf := make([]byte, 2)
 	buf[0] = uint8(c.CapCode)
@@ -1022,6 +1043,7 @@ func (r *IPAddrPrefix) Serialize() ([]byte, error) {
 }
 
 func (r *IPAddrPrefix) AFI() uint16 {
+	log.Info("AFI Called")
 	return AFI_IP
 }
 
@@ -3895,6 +3917,7 @@ const (
 	RF_IPv6_UC     RouteFamily = AFI_IP6<<16 | SAFI_UNICAST
 	RF_IPv4_MC     RouteFamily = AFI_IP<<16 | SAFI_MULTICAST
 	RF_IPv6_MC     RouteFamily = AFI_IP6<<16 | SAFI_MULTICAST
+	RF_DNS_UC      RouteFamily = AFI_DNS<<16 | SAFI_UNICAST
 	RF_IPv4_VPN    RouteFamily = AFI_IP<<16 | SAFI_MPLS_VPN
 	RF_IPv6_VPN    RouteFamily = AFI_IP6<<16 | SAFI_MPLS_VPN
 	RF_IPv4_VPN_MC RouteFamily = AFI_IP<<16 | SAFI_MPLS_VPN_MULTICAST
@@ -3919,6 +3942,7 @@ var AddressFamilyNameMap = map[RouteFamily]string{
 	RF_IPv6_UC:     "ipv6-unicast",
 	RF_IPv4_MC:     "ipv4-multicast",
 	RF_IPv6_MC:     "ipv6-multicast",
+	RF_DNS_UC:      "dns-unicast",
 	RF_IPv4_MPLS:   "ipv4-labelled-unicast",
 	RF_IPv6_MPLS:   "ipv6-labelled-unicast",
 	RF_IPv4_VPN:    "l3vpn-ipv4-unicast",
@@ -3943,6 +3967,7 @@ var AddressFamilyValueMap = map[string]RouteFamily{
 	AddressFamilyNameMap[RF_IPv6_UC]:     RF_IPv6_UC,
 	AddressFamilyNameMap[RF_IPv4_MC]:     RF_IPv4_MC,
 	AddressFamilyNameMap[RF_IPv6_MC]:     RF_IPv6_MC,
+	AddressFamilyNameMap[RF_DNS_UC]:      RF_DNS_UC,
 	AddressFamilyNameMap[RF_IPv4_MPLS]:   RF_IPv4_MPLS,
 	AddressFamilyNameMap[RF_IPv6_MPLS]:   RF_IPv6_MPLS,
 	AddressFamilyNameMap[RF_IPv4_VPN]:    RF_IPv4_VPN,
