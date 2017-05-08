@@ -231,6 +231,7 @@ const (
 	AFI_SAFI_TYPE_IPV6_UNICAST          AfiSafiType = "ipv6-unicast"
 	AFI_SAFI_TYPE_IPV4_LABELLED_UNICAST AfiSafiType = "ipv4-labelled-unicast"
 	AFI_SAFI_TYPE_IPV6_LABELLED_UNICAST AfiSafiType = "ipv6-labelled-unicast"
+	AFI_SAFI_TYPE_DNS_UNICAST           AfiSafiType = "dns-unicast"
 	AFI_SAFI_TYPE_L3VPN_IPV4_UNICAST    AfiSafiType = "l3vpn-ipv4-unicast"
 	AFI_SAFI_TYPE_L3VPN_IPV6_UNICAST    AfiSafiType = "l3vpn-ipv6-unicast"
 	AFI_SAFI_TYPE_L3VPN_IPV4_MULTICAST  AfiSafiType = "l3vpn-ipv4-multicast"
@@ -272,6 +273,7 @@ var AfiSafiTypeToIntMap = map[AfiSafiType]int{
 	AFI_SAFI_TYPE_L3VPN_IPV6_FLOWSPEC:   18,
 	AFI_SAFI_TYPE_L2VPN_FLOWSPEC:        19,
 	AFI_SAFI_TYPE_OPAQUE:                20,
+	AFI_SAFI_TYPE_DNS_UNICAST:           21,
 }
 
 func (v AfiSafiType) ToInt() int {
@@ -304,6 +306,7 @@ var IntToAfiSafiTypeMap = map[int]AfiSafiType{
 	18: AFI_SAFI_TYPE_L3VPN_IPV6_FLOWSPEC,
 	19: AFI_SAFI_TYPE_L2VPN_FLOWSPEC,
 	20: AFI_SAFI_TYPE_OPAQUE,
+	21: AFI_SAFI_TYPE_DNS_UNICAST,
 }
 
 func (v AfiSafiType) Validate() error {
