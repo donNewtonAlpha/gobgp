@@ -712,7 +712,8 @@ func ParsePath(rf bgp.RouteFamily, args []string) (*table.Path, error) {
 		}
 
 		extcomms = args[1:]
-
+	case bgp.RF_DNS_UC:
+		/* do something */
 	case bgp.RF_IPv4_VPN, bgp.RF_IPv6_VPN:
 		if len(args) < 5 || args[1] != "label" || args[3] != "rd" {
 			return nil, fmt.Errorf("invalid format")
