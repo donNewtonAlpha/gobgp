@@ -782,8 +782,8 @@ func ParsePath(rf bgp.RouteFamily, args []string) (*table.Path, error) {
 	case bgp.RF_FS_IPv4_UC, bgp.RF_FS_IPv6_UC:
 		nlri, extcomms, err = ParseFlowSpecArgs(rf, args, rd)
 	case bgp.RF_DNS_UC:
-		m := extractReserved(args, []string{"recordType", "key", "value"})
-		nlri = bgp.NewDnsNLRI(m["recordType"], m["key"], m["value"])
+		m := extractReserved(args, []string{"recordType","keylen", "key", "value"})
+		nlri = bgp.NewDnsNLRI(m["recordType"],m["keylen", m["key"], m["value"])
 	case bgp.RF_OPAQUE:
 		m := extractReserved(args, []string{"key", "value"})
 		if len(m["key"]) != 1 {
