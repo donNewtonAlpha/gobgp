@@ -14,7 +14,6 @@
 // limitations under the License.
 // added DNS type
 
-
 package bgp
 
 import (
@@ -26,7 +25,7 @@ import (
 	"net"
 	"reflect"
 	"regexp"
-//	"runtime/debug"
+	//	"runtime/debug"
 	"strconv"
 	"strings"
 
@@ -3839,6 +3838,20 @@ type OpaqueNLRI struct {
 	Value  []byte
 }
 
+type DnsNLRI struct {
+	RecordType uint16
+	KeyLen     uint8
+	Key        string
+	Value      string
+}
+
+func (n *DnsNLRI) DecodeFromBytes(data []byte) error {
+	n.RecordType = binary.BigEndian.Uint16(data[0:2])
+	n.KeyLen = data[2]
+	n.Key = string(data[3 : 3+n.KeyLen])
+	n.Value = string(data[4+n.KeyLen:])
+
+}
 func (n *OpaqueNLRI) DecodeFromBytes(data []byte) error {
 	if len(data) < 2 {
 		return NewMessageError(BGP_ERROR_UPDATE_MESSAGE_ERROR, BGP_ERROR_SUB_MALFORMED_ATTRIBUTE_LIST, nil, "Not all OpaqueNLRI bytes available")
@@ -3852,6 +3865,16 @@ func (n *OpaqueNLRI) DecodeFromBytes(data []byte) error {
 	return nil
 }
 
+func (n *DnsNLRI) Serialize() ([]byte, error) {
+	buf := make([]byte, 2)
+	binary.BigEndian.PutUint16(buf, uint16(n.RecordType))
+	buf = append(buf, n.KeyLen)
+	buf = append(buf, n.Key...)
+	buf = append(buf, 0x00)
+	buf = append(buf, n.Value...)
+	return buf, nil
+
+}
 func (n *OpaqueNLRI) Serialize() ([]byte, error) {
 	if len(n.Key) > math.MaxUint16 {
 		return nil, fmt.Errorf("Key length too big")
@@ -3860,6 +3883,14 @@ func (n *OpaqueNLRI) Serialize() ([]byte, error) {
 	binary.BigEndian.PutUint16(buf, uint16(len(n.Key)))
 	buf = append(buf, n.Key...)
 	return append(buf, n.Value...), nil
+}
+
+func (n *DnsNLRI) AFI() uint16 {
+	return AFI_DNS
+}
+
+func (n *DnsNLRI) SAFI() uint8 {
+	return SAFI_UNICAST
 }
 
 func (n *OpaqueNLRI) AFI() uint16 {
