@@ -3934,9 +3934,9 @@ func (n *OpaqueNLRI) MarshalJSON() ([]byte, error) {
 		Value: string(n.Value),
 	})
 }
-func NewDnsNLRI(recordType uint16, key, string, value string) *DnsNLRI {
+func NewDnsNLRI(recordType string, key, string, value string) *DnsNLRI {
 	return &DnsNLRI{
-		RecordType: recordType,
+		RecordType: uint16([]byte(recordType)),
 		KeyLen:     uint8(len(key)),
 		Key:        key,
 		Value:      value,
