@@ -3850,7 +3850,7 @@ func (n *DnsNLRI) DecodeFromBytes(data []byte) error {
 	n.KeyLen = data[2]
 	n.Key = string(data[3 : 3+n.KeyLen])
 	n.Value = string(data[4+n.KeyLen:])
-        return nil
+	return nil
 }
 func (n *OpaqueNLRI) DecodeFromBytes(data []byte) error {
 	if len(data) < 2 {
@@ -3901,14 +3901,30 @@ func (n *OpaqueNLRI) SAFI() uint8 {
 	return SAFI_KEY_VALUE
 }
 
+func (n *DnsNLRI) Len() int {
+	return 4 + len(n.Key) + len(n.Value)
+}
 func (n *OpaqueNLRI) Len() int {
 	return 2 + len(n.Key) + len(n.Value)
 }
 
+func (n *DnsNLRI) String() string {
+	return fmt.Sprintf("%s", n.Key)
+}
 func (n *OpaqueNLRI) String() string {
 	return fmt.Sprintf("%s", n.Key)
 }
-
+func (n *DnsNLRI) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		RecordType uint16 `json:"recordType"`
+		Key        string `json:"key"`
+		Value      string `json:"value"`
+	}{
+		RecordType: uint16(n.RecordType),
+		Key:        string(n.Key),
+		Value:      string(n.Value),
+	})
+}
 func (n *OpaqueNLRI) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Key   string `json:"key"`
@@ -3918,7 +3934,14 @@ func (n *OpaqueNLRI) MarshalJSON() ([]byte, error) {
 		Value: string(n.Value),
 	})
 }
-
+func NewDnsNLRI(recordType uint16, key, string, value string) *DnsNLRI {
+	return &DnsNLRI{
+		RecordType: recordType,
+		KenLen:     len(key),
+		Key:        key,
+		Value:      value,
+	}
+}
 func NewOpaqueNLRI(key, value []byte) *OpaqueNLRI {
 	return &OpaqueNLRI{
 		Key:   key,
