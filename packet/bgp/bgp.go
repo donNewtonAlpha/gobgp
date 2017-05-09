@@ -3934,11 +3934,11 @@ func (n *OpaqueNLRI) MarshalJSON() ([]byte, error) {
 		Value: string(n.Value),
 	})
 }
-func NewDnsNLRI(recordType string,keylen string, key, string, value string) *DnsNLRI {
-        base:=10
-        size:=16
-        rec_type,_:=strconv.ParseUint(recordType,base,size)
-        key_len,_:=strconv.ParseUint(keylen,base,size)
+func NewDnsNLRI(recordType, keylen, key, value string) *DnsNLRI {
+	base := 10
+	size := 16
+	rec_type, _ := strconv.ParseUint(recordType, base, size)
+	key_len, _ := strconv.ParseUint(keylen, base, size)
 	return &DnsNLRI{
 		RecordType: uint16(rec_type),
 		KeyLen:     uint8(key_len),
