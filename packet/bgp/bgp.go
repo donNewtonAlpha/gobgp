@@ -3850,7 +3850,7 @@ func (n *DnsNLRI) DecodeFromBytes(data []byte) error {
 	n.KeyLen = data[2]
 	n.Key = string(data[3 : 3+n.KeyLen])
 	n.Value = string(data[4+n.KeyLen:])
-
+        return nil
 }
 func (n *OpaqueNLRI) DecodeFromBytes(data []byte) error {
 	if len(data) < 2 {
