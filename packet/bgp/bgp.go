@@ -7856,6 +7856,9 @@ func (l *FlowSpecL2VPN) Flat() map[string]string {
 func (l *OpaqueNLRI) Flat() map[string]string {
 	return map[string]string{}
 }
+func (l *DnsNLRI) Flat() map[string]string {
+	return map[string]string{}
+}
 
 // Update a Flat representation by adding elements of the second
 // one. If two elements use same keys, values are separated with
