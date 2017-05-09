@@ -712,8 +712,6 @@ func ParsePath(rf bgp.RouteFamily, args []string) (*table.Path, error) {
 		}
 
 		extcomms = args[1:]
-	case bgp.RF_DNS_UC:
-		/* do something */
 	case bgp.RF_IPv4_VPN, bgp.RF_IPv6_VPN:
 		if len(args) < 5 || args[1] != "label" || args[3] != "rd" {
 			return nil, fmt.Errorf("invalid format")
@@ -783,7 +781,7 @@ func ParsePath(rf bgp.RouteFamily, args []string) (*table.Path, error) {
 		nlri, extcomms, err = ParseFlowSpecArgs(rf, args, rd)
 	case bgp.RF_DNS_UC:
 		m := extractReserved(args, []string{"recordType","keylen", "key", "value"})
-		nlri = bgp.NewDnsNLRI(m["recordType"],m["keylen"], m["key"], m["value"])
+		nlri = bgp.NewDnsNLRI(m["recordType"][0],m["keylen"][0], m["key"][0], m["value"][0])
 	case bgp.RF_OPAQUE:
 		m := extractReserved(args, []string{"key", "value"})
 		if len(m["key"]) != 1 {
