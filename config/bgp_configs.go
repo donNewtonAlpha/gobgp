@@ -2863,6 +2863,8 @@ type Ipv4Unicast struct {
 	// original -> bgp-mp:ipv4-unicast-state
 	State Ipv4UnicastState `mapstructure:"state" json:"state,omitempty"`
 }
+type DnsUnicast struct {
+}
 
 func (lhs *Ipv4Unicast) Equal(rhs *Ipv4Unicast) bool {
 	if lhs == nil || rhs == nil {
@@ -3069,6 +3071,8 @@ type AfiSafi struct {
 	ApplyPolicy ApplyPolicy `mapstructure:"apply-policy" json:"apply-policy,omitempty"`
 	// original -> bgp-mp:ipv4-unicast
 	Ipv4Unicast Ipv4Unicast `mapstructure:"ipv4-unicast" json:"ipv4-unicast,omitempty"`
+
+	DnsUnicast DnsUnicast `mapstructure:"dns-unicast" json:"dns-unicast,omitempty"`
 	// original -> bgp-mp:ipv6-unicast
 	Ipv6Unicast Ipv6Unicast `mapstructure:"ipv6-unicast" json:"ipv6-unicast,omitempty"`
 	// original -> bgp-mp:ipv4-labelled-unicast
