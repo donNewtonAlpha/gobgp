@@ -429,7 +429,7 @@ func (dest *Destination) implicitWithdraw() paths {
 }
 
 func (dest *Destination) computeKnownBestPath() (*Path, BestPathReason, error) {
-
+	log.Debug("testing")
 	// If we do not have any paths to this destination, then we do not have
 	// new best path.
 	if len(dest.knownPathList) == 0 {
