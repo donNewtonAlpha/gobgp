@@ -433,6 +433,7 @@ func (dest *Destination) computeKnownBestPath() (*Path, BestPathReason, error) {
 	// If we do not have any paths to this destination, then we do not have
 	// new best path.
 	if len(dest.knownPathList) == 0 {
+		log.Debug("dest.knownPathList is 0")
 		return nil, BPR_UNKNOWN, nil
 	}
 
@@ -447,6 +448,7 @@ func (dest *Destination) computeKnownBestPath() (*Path, BestPathReason, error) {
 		// If the first path has the invalidated next-hop, which evaluated by
 		// IGP, returns no path with the reason of the next-hop reachability.
 		if dest.knownPathList[0].IsNexthopInvalid {
+			log.Debug("dest.knownPathList[0].IsNexthopInvalid")
 			return nil, BPR_REACHABLE_NEXT_HOP, nil
 		}
 		return dest.knownPathList[0], BPR_ONLY_PATH, nil
