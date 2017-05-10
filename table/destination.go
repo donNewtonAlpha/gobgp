@@ -445,6 +445,7 @@ func (dest *Destination) computeKnownBestPath() (*Path, BestPathReason, error) {
 	// tie between two new paths learned in one cycle for which best-path
 	// calculation steps lead to tie.
 	if len(dest.knownPathList) == 1 {
+		log.Debug("len(dest.knownPathList) == 1")
 		// If the first path has the invalidated next-hop, which evaluated by
 		// IGP, returns no path with the reason of the next-hop reachability.
 		if dest.knownPathList[0].IsNexthopInvalid {
