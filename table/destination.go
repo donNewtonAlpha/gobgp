@@ -431,13 +431,13 @@ func (dest *Destination) implicitWithdraw() paths {
 func (dest *Destination) computeKnownBestPath() (*Path, BestPathReason, error) {
 	log.WithFields(log.Fields{
 		"Topic": "Table",
-	}).Debug("testing")
+	}).Debugf("testing %d", 0)
 	// If we do not have any paths to this destination, then we do not have
 	// new best path.
 	if len(dest.knownPathList) == 0 {
 		log.WithFields(log.Fields{
 			"Topic": "Table",
-		}).Debug("dest.knownPathList is 0")
+		}).Debugf("dest.knownPathList is %d", 0)
 		return nil, BPR_UNKNOWN, nil
 	}
 
