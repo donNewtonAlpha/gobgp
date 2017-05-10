@@ -2781,14 +2781,30 @@ type Ipv4UnicastState struct {
 	SendDefaultRoute bool `mapstructure:"send-default-route" json:"send-default-route,omitempty"`
 }
 
+type DnsUnicastState struct {
+	SendDefaultRoute bool
+}
+
 //struct for container bgp-mp:config
 type Ipv4UnicastConfig struct {
 	// original -> bgp-mp:send-default-route
 	//bgp-mp:send-default-route's original type is boolean
 	SendDefaultRoute bool `mapstructure:"send-default-route" json:"send-default-route,omitempty"`
 }
+type DnsUnicastConfig struct {
+	SendDefaultRoute bool
+}
 
 func (lhs *Ipv4UnicastConfig) Equal(rhs *Ipv4UnicastConfig) bool {
+	if lhs == nil || rhs == nil {
+		return false
+	}
+	if lhs.SendDefaultRoute != rhs.SendDefaultRoute {
+		return false
+	}
+	return true
+}
+func (lhs *DnsUnicastConfig) Equal(rhs *DnsUnicastConfig) bool {
 	if lhs == nil || rhs == nil {
 		return false
 	}
@@ -2864,6 +2880,9 @@ type Ipv4Unicast struct {
 	State Ipv4UnicastState `mapstructure:"state" json:"state,omitempty"`
 }
 type DnsUnicast struct {
+	PrefixLimit PrefixLimit
+	Config      DnsUnicastConfig
+	State       DnsUnicastState
 }
 
 func (lhs *Ipv4Unicast) Equal(rhs *Ipv4Unicast) bool {
