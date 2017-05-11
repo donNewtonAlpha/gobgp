@@ -4095,8 +4095,10 @@ func (n *OpaqueNLRI) DecodeFromBytes(data []byte) error {
 
 func (n *DnsNLRI) Serialize() ([]byte, error) {
 	buf := make([]byte, 2)
+	keyLenBuf := make([]byte, 2)
 	binary.BigEndian.PutUint16(buf, uint16(n.RecordType))
-	buf = append(buf, n.KeyLen)
+	binary.BigEndian.PutUint16(keyLenBuf, n.KeyLen)
+	buf = append(buf, keyLenBuf...)
 	buf = append(buf, n.Key...)
 	buf = append(buf, 0x00)
 	buf = append(buf, n.Value...)
@@ -4130,7 +4132,7 @@ func (n *OpaqueNLRI) SAFI() uint8 {
 }
 
 func (n *DnsNLRI) Len() int {
-	return len(n.RecordType) + len(n.KeyLen) + len(n.Key) + len(n.Value)
+	return 4 + len(n.Key) + len(n.Value)
 }
 func (n *OpaqueNLRI) Len() int {
 	return 2 + len(n.Key) + len(n.Value)
@@ -4166,7 +4168,7 @@ func NewDnsNLRI(recordType, key, value string) *DnsNLRI {
 	key_len := len(key)
 	return &DnsNLRI{
 		RecordType: uint16(GetDnsRecordType(recordType)),
-		KeyLen:     uint8(key_len),
+		KeyLen:     uint16(key_len),
 		Key:        key,
 		Value:      value,
 	}
