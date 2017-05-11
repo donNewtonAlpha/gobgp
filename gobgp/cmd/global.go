@@ -18,7 +18,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 	"regexp"
 	"sort"
@@ -781,9 +780,10 @@ func ParsePath(rf bgp.RouteFamily, args []string) (*table.Path, error) {
 	case bgp.RF_FS_IPv4_UC, bgp.RF_FS_IPv6_UC:
 		nlri, extcomms, err = ParseFlowSpecArgs(rf, args, rd)
 	case bgp.RF_DNS_UC:
-		fmt.Errorf(args)
-		m := extractReserved(args, []string{"recordType", "keylen", "key", "value"})
-		nlri = bgp.NewDnsNLRI(m["recordType"][0], m["keylen"][0], m["key"][0], m["value"][0])
+		for i := 0; i < len(args); i++ {
+			fmt.Println(args[i])
+		}
+		nlri = bgp.NewDnsNLRI(args[0], args[1], args[2])
 	case bgp.RF_OPAQUE:
 		m := extractReserved(args, []string{"key", "value"})
 		if len(m["key"]) != 1 {
