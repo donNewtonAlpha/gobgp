@@ -25,7 +25,7 @@ import (
 	"net"
 	"reflect"
 	"regexp"
-	//	"runtime/debug"
+	"runtime/debug"
 	"strconv"
 	"strings"
 
@@ -3909,7 +3909,7 @@ func (n *OpaqueNLRI) Len() int {
 }
 
 func (n *DnsNLRI) String() string {
-	return fmt.Sprintf("%s", n.Key)
+	return fmt.Sprintf("%d %s %s ", n.RecordType, n.Key, n.Value)
 }
 func (n *OpaqueNLRI) String() string {
 	return fmt.Sprintf("%s", n.Key)
@@ -4084,6 +4084,9 @@ func NewPrefixFromRouteFamily(afi uint16, safi uint8) (prefix AddrPrefixInterfac
 		prefix = &FlowSpecIPv6VPN{FlowSpecNLRI{rf: RF_FS_IPv6_VPN}}
 	case RF_FS_L2_VPN:
 		prefix = &FlowSpecL2VPN{FlowSpecNLRI{rf: RF_FS_L2_VPN}}
+	case RF_DNS_UC:
+		debug.PrintStack()
+		prefix = &DnsNLRI{}
 	case RF_OPAQUE:
 		prefix = &OpaqueNLRI{}
 	default:
