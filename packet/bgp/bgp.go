@@ -200,7 +200,7 @@ func (p PmsiTunnelType) String() string {
 	}
 }
 
-type DnsRecordType uint32
+type DnsRecordType uint16
 
 const (
 	A           DnsRecordType = 1
@@ -4063,17 +4063,21 @@ type OpaqueNLRI struct {
 }
 
 type DnsNLRI struct {
-	RecordType uint32
+	RecordType uint16
 	KeyLen     uint8
 	Key        string
 	Value      string
 }
 
 func (n *DnsNLRI) DecodeFromBytes(data []byte) error {
-	n.RecordType = binary.BigEndian.Uint32(data[0:4])
-	n.KeyLen = data[4]
-	n.Key = string(data[5 : 5+n.KeyLen])
-	n.Value = string(data[6+n.KeyLen:])
+	for i := 0; i < len(data); i++ {
+		fmt.Printf(" %d-%x ", i, data[i])
+	}
+	fmt.Println("")
+	n.RecordType = binary.BigEndian.Uint16(data[0:2])
+	n.KeyLen = data[2]
+	n.Key = string(data[3 : 3+n.KeyLen])
+	n.Value = string(data[3+n.KeyLen:])
 	return nil
 }
 func (n *OpaqueNLRI) DecodeFromBytes(data []byte) error {
@@ -4091,7 +4095,7 @@ func (n *OpaqueNLRI) DecodeFromBytes(data []byte) error {
 
 func (n *DnsNLRI) Serialize() ([]byte, error) {
 	buf := make([]byte, 2)
-	binary.BigEndian.PutUint32(buf, uint32(n.RecordType))
+	binary.BigEndian.PutUint16(buf, uint16(n.RecordType))
 	buf = append(buf, n.KeyLen)
 	buf = append(buf, n.Key...)
 	buf = append(buf, 0x00)
@@ -4126,7 +4130,7 @@ func (n *OpaqueNLRI) SAFI() uint8 {
 }
 
 func (n *DnsNLRI) Len() int {
-	return 4 + len(n.Key) + len(n.Value)
+	return 3 + len(n.Key) + len(n.Value)
 }
 func (n *OpaqueNLRI) Len() int {
 	return 2 + len(n.Key) + len(n.Value)
@@ -4161,7 +4165,7 @@ func (n *OpaqueNLRI) MarshalJSON() ([]byte, error) {
 func NewDnsNLRI(recordType, key, value string) *DnsNLRI {
 	key_len := len(key)
 	return &DnsNLRI{
-		RecordType: uint32(GetDnsRecordType(recordType)),
+		RecordType: uint16(GetDnsRecordType(recordType)),
 		KeyLen:     uint8(key_len),
 		Key:        key,
 		Value:      value,
@@ -4306,6 +4310,7 @@ func NewPrefixFromRouteFamily(afi uint16, safi uint8) (prefix AddrPrefixInterfac
 	case RF_FS_L2_VPN:
 		prefix = &FlowSpecL2VPN{FlowSpecNLRI{rf: RF_FS_L2_VPN}}
 	case RF_DNS_UC:
+		fmt.Println("case RF_DNS_UC")
 		prefix = &DnsNLRI{}
 	case RF_OPAQUE:
 		prefix = &OpaqueNLRI{}
