@@ -4064,7 +4064,7 @@ type OpaqueNLRI struct {
 
 type DnsNLRI struct {
 	RecordType uint16
-	KeyLen     uint8
+	KeyLen     uint16
 	Key        string
 	Value      string
 }
@@ -4075,7 +4075,7 @@ func (n *DnsNLRI) DecodeFromBytes(data []byte) error {
 	}
 	fmt.Println("")
 	n.RecordType = binary.BigEndian.Uint16(data[0:2])
-	n.KeyLen = data[2]
+	n.KeyLen = binary.BigEndian.Uint16(data[2:4])
 	n.Key = string(data[3 : 3+n.KeyLen])
 	n.Value = string(data[3+n.KeyLen:])
 	return nil
@@ -4130,7 +4130,7 @@ func (n *OpaqueNLRI) SAFI() uint8 {
 }
 
 func (n *DnsNLRI) Len() int {
-	return 3 + len(n.Key) + len(n.Value)
+	return len(n.RecordType) + len(n.KeyLen) + len(n.Key) + len(n.Value)
 }
 func (n *OpaqueNLRI) Len() int {
 	return 2 + len(n.Key) + len(n.Value)
