@@ -25,7 +25,7 @@ import (
 	"net"
 	"reflect"
 	"regexp"
-	"runtime/debug"
+	//"runtime/debug"
 	"strconv"
 	"strings"
 
@@ -198,6 +198,230 @@ func (p PmsiTunnelType) String() string {
 	default:
 		return fmt.Sprintf("PmsiTunnelType(%d)", uint8(p))
 	}
+}
+
+type DnsRecordType uint32
+
+const (
+	A           DnsRecordType = 1
+	NS          DnsRecordType = 2
+	CNAME       DnsRecordType = 5
+	SOA         DnsRecordType = 6
+	PTR         DnsRecordType = 12
+	MX          DnsRecordType = 15
+	TXT         DnsRecordType = 16
+	RP          DnsRecordType = 17
+	AFSDB       DnsRecordType = 18
+	SIG         DnsRecordType = 24
+	KEY         DnsRecordType = 25
+	AAAA        DnsRecordType = 28
+	LOC         DnsRecordType = 29
+	SRV         DnsRecordType = 33
+	NAPTR       DnsRecordType = 35
+	KX          DnsRecordType = 36
+	CERT        DnsRecordType = 37
+	DNAME       DnsRecordType = 39
+	OPT         DnsRecordType = 41
+	APL         DnsRecordType = 42
+	DS          DnsRecordType = 43
+	SSHFP       DnsRecordType = 44
+	IPSECKEY    DnsRecordType = 45
+	RRSIG       DnsRecordType = 46
+	NSEC        DnsRecordType = 47
+	DNSKEY      DnsRecordType = 48
+	DHCID       DnsRecordType = 49
+	NSEC3       DnsRecordType = 50
+	NSEC3PARAM  DnsRecordType = 51
+	TLSA        DnsRecordType = 52
+	HIP         DnsRecordType = 55
+	CDS         DnsRecordType = 59
+	CDNSKEY     DnsRecordType = 60
+	TKEY        DnsRecordType = 249
+	TSIG        DnsRecordType = 250
+	IXFR        DnsRecordType = 251
+	AXFR        DnsRecordType = 252
+	URI         DnsRecordType = 256
+	CAA         DnsRecordType = 257
+	TA          DnsRecordType = 32768
+	DLV         DnsRecordType = 32769
+	DNS_UNKNOWN DnsRecordType = 0
+)
+
+func GetDnsRecordTypeName(dnsRecordType DnsRecordType) string {
+	switch dnsRecordType {
+	case A:
+		return "A"
+	case NS:
+		return "NS"
+	case CNAME:
+		return "CNAME"
+	case SOA:
+		return "SOA"
+	case PTR:
+		return "PTR"
+	case MX:
+		return "MX"
+	case TXT:
+		return "TXT"
+	case RP:
+		return "RP"
+	case AFSDB:
+		return "AFSDB"
+	case SIG:
+		return "SIG"
+	case KEY:
+		return "KEY"
+	case AAAA:
+		return "AAAA"
+	case LOC:
+		return "LOC"
+	case SRV:
+		return "SRV"
+	case NAPTR:
+		return "NAPTR"
+	case KX:
+		return "KX"
+	case CERT:
+		return "CERT"
+	case DNAME:
+		return "DNAME"
+	case APL:
+		return "APL"
+	case DS:
+		return "DS"
+	case SSHFP:
+		return "SSHFP"
+	case IPSECKEY:
+		return "IPSECKEY"
+	case RRSIG:
+		return "RRSIG"
+	case NSEC:
+		return "NSEC"
+	case DNSKEY:
+		return "DNSKEY"
+	case DHCID:
+		return "DHCID"
+	case NSEC3:
+		return "NSEC3"
+	case NSEC3PARAM:
+		return "NSEC3PARAM"
+	case TLSA:
+		return "TLSA"
+	case HIP:
+		return "HIP"
+	case CDS:
+		return "CDS"
+	case CDNSKEY:
+		return "CDNSKEY"
+	case TKEY:
+		return "TKEY"
+	case TSIG:
+		return "TSIG"
+	case URI:
+		return "URI"
+	case CAA:
+		return "CAA"
+	case TA:
+		return "TA"
+	case DLV:
+		return "DLV"
+	case OPT:
+		return "OPT"
+	case IXFR:
+		return "IXFR"
+	case AXFR:
+		return "AXFR"
+
+	}
+	return ""
+}
+func GetDnsRecordType(name string) DnsRecordType {
+	newName := strings.ToUpper(name)
+	switch newName {
+	case "A":
+		return A
+	case "NS":
+		return NS
+	case "CNAME":
+		return CNAME
+	case "SOA":
+		return SOA
+	case "PTR":
+		return PTR
+	case "MX":
+		return MX
+	case "TXT":
+		return TXT
+	case "RP":
+		return RP
+	case "AFSDB":
+		return AFSDB
+	case "SIG":
+		return SIG
+	case "KEY":
+		return KEY
+	case "AAAA":
+		return AAAA
+	case "LOC":
+		return LOC
+	case "SRV":
+		return SRV
+	case "NAPTR":
+		return NAPTR
+	case "KX":
+		return KX
+	case "CERT":
+		return CERT
+	case "DNAME":
+		return DNAME
+	case "APL":
+		return APL
+	case "DS":
+		return DS
+	case "SSHFP":
+		return SSHFP
+	case "IPSECKEY":
+		return IPSECKEY
+	case "RRSIG":
+		return RRSIG
+	case "NSEC":
+		return NSEC
+	case "DNSKEY":
+		return DNSKEY
+	case "DHCID":
+		return DHCID
+	case "NSEC3":
+		return NSEC3
+	case "NSEC3PARAM":
+		return NSEC3PARAM
+	case "TLSA":
+		return TLSA
+	case "HIP":
+		return HIP
+	case "CDS":
+		return CDS
+	case "CDNSKEY":
+		return CDNSKEY
+	case "TKEY":
+		return TKEY
+	case "TSIG":
+		return TSIG
+	case "URI":
+		return URI
+	case "CAA":
+		return CAA
+	case "TA":
+		return TA
+	case "DLV":
+		return DLV
+	case "OPT":
+		return OPT
+	case "IXFR":
+		return IXFR
+	case "AXFR":
+		return AXFR
+	}
+	return DNS_UNKNOWN
 }
 
 type EncapSubTLVType uint8
@@ -3839,17 +4063,17 @@ type OpaqueNLRI struct {
 }
 
 type DnsNLRI struct {
-	RecordType uint16
+	RecordType uint32
 	KeyLen     uint8
 	Key        string
 	Value      string
 }
 
 func (n *DnsNLRI) DecodeFromBytes(data []byte) error {
-	n.RecordType = binary.BigEndian.Uint16(data[0:2])
-	n.KeyLen = data[2]
-	n.Key = string(data[3 : 3+n.KeyLen])
-	n.Value = string(data[4+n.KeyLen:])
+	n.RecordType = binary.BigEndian.Uint32(data[0:4])
+	n.KeyLen = data[4]
+	n.Key = string(data[5 : 5+n.KeyLen])
+	n.Value = string(data[6+n.KeyLen:])
 	return nil
 }
 func (n *OpaqueNLRI) DecodeFromBytes(data []byte) error {
@@ -3867,7 +4091,7 @@ func (n *OpaqueNLRI) DecodeFromBytes(data []byte) error {
 
 func (n *DnsNLRI) Serialize() ([]byte, error) {
 	buf := make([]byte, 2)
-	binary.BigEndian.PutUint16(buf, uint16(n.RecordType))
+	binary.BigEndian.PutUint32(buf, uint32(n.RecordType))
 	buf = append(buf, n.KeyLen)
 	buf = append(buf, n.Key...)
 	buf = append(buf, 0x00)
@@ -3909,18 +4133,18 @@ func (n *OpaqueNLRI) Len() int {
 }
 
 func (n *DnsNLRI) String() string {
-	return fmt.Sprintf("%d %s %s ", n.RecordType, n.Key, n.Value)
+	return fmt.Sprintf("%s %s %s ", GetDnsRecordTypeName(DnsRecordType(n.RecordType)), n.Key, n.Value)
 }
 func (n *OpaqueNLRI) String() string {
 	return fmt.Sprintf("%s", n.Key)
 }
 func (n *DnsNLRI) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		RecordType uint16 `json:"recordType"`
+		RecordType uint32 `json:"recordType"`
 		Key        string `json:"key"`
 		Value      string `json:"value"`
 	}{
-		RecordType: uint16(n.RecordType),
+		RecordType: uint32(n.RecordType),
 		Key:        string(n.Key),
 		Value:      string(n.Value),
 	})
@@ -3935,12 +4159,9 @@ func (n *OpaqueNLRI) MarshalJSON() ([]byte, error) {
 	})
 }
 func NewDnsNLRI(recordType, key, value string) *DnsNLRI {
-	base := 10
-	size := 16
-	rec_type, _ := strconv.ParseUint(recordType, base, size)
 	key_len := len(key)
 	return &DnsNLRI{
-		RecordType: uint16(rec_type),
+		RecordType: uint32(GetDnsRecordType(recordType)),
 		KeyLen:     uint8(key_len),
 		Key:        key,
 		Value:      value,
@@ -4085,7 +4306,6 @@ func NewPrefixFromRouteFamily(afi uint16, safi uint8) (prefix AddrPrefixInterfac
 	case RF_FS_L2_VPN:
 		prefix = &FlowSpecL2VPN{FlowSpecNLRI{rf: RF_FS_L2_VPN}}
 	case RF_DNS_UC:
-		debug.PrintStack()
 		prefix = &DnsNLRI{}
 	case RF_OPAQUE:
 		prefix = &OpaqueNLRI{}
