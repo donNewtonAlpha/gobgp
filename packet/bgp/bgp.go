@@ -5615,8 +5615,6 @@ func (p *PathAttributeMpReachNLRI) DecodeFromBytes(data []byte) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("prexfix.Len():%d len(value):%d", prefix.Len(), len(value))
-		fmt.Println(string(value))
 		if prefix.Len() > len(value) {
 			return NewMessageError(eCode, eSubCode, value, "prefix length is incorrect")
 		}
@@ -5759,8 +5757,6 @@ func (p *PathAttributeMpUnreachNLRI) DecodeFromBytes(data []byte) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("prexfix.Len():%d len(value):%d", prefix.Len(), len(value))
-
 		if prefix.Len() > len(value) {
 			return NewMessageError(eCode, eSubCode, data[:p.PathAttribute.Len()], "prefix length is incorrect")
 		}
