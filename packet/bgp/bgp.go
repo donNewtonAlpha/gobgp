@@ -4070,14 +4070,10 @@ type DnsNLRI struct {
 }
 
 func (n *DnsNLRI) DecodeFromBytes(data []byte) error {
-	for i := 0; i < len(data); i++ {
-		fmt.Printf(" %d-%x ", i, data[i])
-	}
-	fmt.Println("")
 	n.RecordType = binary.BigEndian.Uint16(data[0:2])
 	n.KeyLen = binary.BigEndian.Uint16(data[2:4])
-	n.Key = string(data[3 : 3+n.KeyLen])
-	n.Value = string(data[3+n.KeyLen:])
+	n.Key = string(data[4 : 4+n.KeyLen])
+	n.Value = string(data[4+n.KeyLen:])
 	return nil
 }
 func (n *OpaqueNLRI) DecodeFromBytes(data []byte) error {
@@ -4098,7 +4094,8 @@ func (n *DnsNLRI) Serialize() ([]byte, error) {
 	keyLenBuf := make([]byte, 2)
 	binary.BigEndian.PutUint16(buf, uint16(n.RecordType))
 	binary.BigEndian.PutUint16(keyLenBuf, n.KeyLen)
-	buf = append(buf, keyLenBuf...)
+	buf = append(buf, keyLenBuf[0])
+	buf = append(buf, keyLenBuf[1])
 	buf = append(buf, n.Key...)
 	buf = append(buf, 0x00)
 	buf = append(buf, n.Value...)
@@ -5618,6 +5615,8 @@ func (p *PathAttributeMpReachNLRI) DecodeFromBytes(data []byte) error {
 		if err != nil {
 			return err
 		}
+		fmt.Printf("prexfix.Len():%d len(value):%d", prefix.Len(), len(value))
+		fmt.Println(string(value))
 		if prefix.Len() > len(value) {
 			return NewMessageError(eCode, eSubCode, value, "prefix length is incorrect")
 		}
@@ -5760,6 +5759,8 @@ func (p *PathAttributeMpUnreachNLRI) DecodeFromBytes(data []byte) error {
 		if err != nil {
 			return err
 		}
+		fmt.Printf("prexfix.Len():%d len(value):%d", prefix.Len(), len(value))
+
 		if prefix.Len() > len(value) {
 			return NewMessageError(eCode, eSubCode, data[:p.PathAttribute.Len()], "prefix length is incorrect")
 		}
