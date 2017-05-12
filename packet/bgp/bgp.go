@@ -4309,7 +4309,6 @@ func NewPrefixFromRouteFamily(afi uint16, safi uint8) (prefix AddrPrefixInterfac
 	case RF_FS_L2_VPN:
 		prefix = &FlowSpecL2VPN{FlowSpecNLRI{rf: RF_FS_L2_VPN}}
 	case RF_DNS_UC:
-		fmt.Println("case RF_DNS_UC")
 		prefix = &DnsNLRI{}
 	case RF_OPAQUE:
 		prefix = &OpaqueNLRI{}
