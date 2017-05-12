@@ -8094,11 +8094,11 @@ func (n *DnsNLRI) Len() int {
 
 func (n *DnsNLRI) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		RecordType uint32 `json:"recordType"`
+		RecordType string `json:"recordType"`
 		Key        string `json:"key"`
 		Value      string `json:"value"`
 	}{
-		RecordType: uint32(n.RecordType),
+		RecordType: GetDnsRecordTypeName(DnsRecordType(n.RecordType)),
 		Key:        string(n.Key),
 		Value:      string(n.Value),
 	})
