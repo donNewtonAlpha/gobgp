@@ -8278,6 +8278,7 @@ func NewDnsARecordNLRI(name, ttl, address string) *DnsNLRI {
 
 func NewDnsSRVRecordNLRI(name, ttl, service, proto, priority, weight, port, target string) *DnsNLRI {
 	srvRecord := SRVRecord{
+		Service:  service,
 		Proto:    proto,
 		Priority: uint16(priority),
 		Weight:   uint16(weight),
