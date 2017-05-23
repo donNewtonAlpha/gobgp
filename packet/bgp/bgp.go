@@ -8259,7 +8259,7 @@ func (n *DnsNLRI) String() string {
 	case URI:
 		output = n.Data.(*URIRecord).String()
 	}
-	fullString := fmt.Sprintf("%s %s IN %d %s", GetDnsRecordTypeName(n.Type), n.Name, n.TTL, output)
+	fullString := fmt.Sprintf("%s IN %s %d %s", n.Name, GetDnsRecordTypeName(n.Type), n.TTL, output)
 	return fullString
 }
 func (n *DnsNLRI) Len() int {
