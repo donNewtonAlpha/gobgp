@@ -784,7 +784,35 @@ func ParsePath(rf bgp.RouteFamily, args []string) (*table.Path, error) {
 			fmt.Println(args[i])
 		}
 		fmt.Println("right here")
-		nlri = bgp.NewDnsNLRI(args[0], args[1], args[2])
+		m := extractReserved(args, []string{"rt:=", "name:=", "ttl:=", "data:="})
+
+		if len(m["rt:="]) != 1 {
+			return nil, fmt.Errorf("dns record type missing")
+		} else {
+			switch m["rt:="]:
+				case "A":
+					
+			arg0 := args[0]
+			arg1 := args[2]
+			x := 0
+			for i := 3; i < len(args); i++ {
+				if args[i] == ";" {
+					x = i
+				}
+			}
+			arg2 := ""
+			for i := 3; i < len(args); i++ {
+				if i < x {
+					arg1 = arg1 + " " + args[i]
+				}
+				if i > x {
+					arg2 = arg2 + " " + args[i]
+				}
+			}
+			nlri = bgp.NewDnsNLRI(arg0, arg1, arg2)
+		} else {
+			nlri = bgp.NewDnsNLRI(args[0], args[1], args[2])
+		}
 	case bgp.RF_OPAQUE:
 		m := extractReserved(args, []string{"key", "value"})
 		if len(m["key"]) != 1 {

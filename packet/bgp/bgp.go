@@ -8051,30 +8051,178 @@ func GetDnsRecordType(name string) DnsRecordType {
 	return DNS_UNKNOWN
 }
 
-type DnsNLRI struct {
-	RecordType uint16
-	KeyLen     uint16
-	Key        string
-	Value      string
+type RData interface {
+	DecodeSubTypeFromBytes(data []byte) error
+	SerializeSubType() ([]byte, error)
+	String() string
 }
 
+/************* A Record ******/
+type ARecord struct {
+	IPAddress uint32
+}
+
+func (a *ARecord) DecodeSubTypeFromBytes(data []byte) error {
+	a.IPAddress = binary.BigEndian.Uint32(data)
+}
+func (a *ARecord) SerializeSubType() ([]byte, error) {
+	buf := make([]byte, 4)
+	binary.BigEndian.PutUint32(buf, a.IPAddress)
+	return buf, nil
+}
+func (a *ARecord) String() string {
+	data = make([]byte, 4)
+	binary.BigEndian.PutUint32(data, a.IPAddress)
+	output := fmt.Sprintf("%d.%d.%d.%d", data[3], data[2], data[1], data[0])
+	return output
+}
+
+/*************A Record ******/
+
+/*************SRV Record ******/
+
+type SRVRecord struct {
+	Service  string
+	Proto    string
+	Priority uint16
+	Weight   uint16
+	Port     uint16
+	Target   string
+}
+
+func (s *SRVRecord) DecodeSubTypeFromBytes(data []byte) error {
+	serviceLen := binary.BigEndian.Uint16(data[0:2])
+	s.Service = string(data[2 : 2+serviceLen])
+	protoLen := binary.BigEndian.Uint16(data[2+serviceLen : 4+serviceLen])
+	s.Proto = string(data[4+serviceLen : 4+serviceLen+protoLen])
+	s.Priority = binary.BigEndian.Uint16(data[4+serviceLen+protoLen : 6+serviceLen+protoLen])
+	s.Weight = binary.BigEndian.Uint16(data[6+serviceLen+protoLen : 8+serviceLen+protoLen])
+	s.Port = binary.BigEndian.Uint16(data[8+serviceLen+protoLen : 10+serviceLen+protoLen])
+	s.Target = string(data[10+serviceLen+protoLen:])
+}
+
+func (s *SRVRecord) SerializeSubType() ([]byte, error) {
+	buf := make([]byte, 2)
+	binary.BigEndian.PutUint16(buf, len(s.Service))
+	buf = append(buf, s.Service...)
+	protoLen := make([]byte, 2)
+	binary.BigEndian.PutUint16(len(s.Proto))
+	buf = append(buf, protoLen)
+	buf = append(buf, s.Proto...)
+	priority := make([]byte, 2)
+	binary.BigEndian.PutUint16(priority, s.Priority)
+	weight := make([]byte, 2)
+	binary.BigEndian.PutUint16(weight, s.Weight)
+	port := make([]byte, 2)
+	binary.BigEndian.PutUint16(port, s.Port)
+	buf = append(buf, priority, weight, port)
+	buf = append(buf, s.Target...)
+	return buf, nil
+}
+func (s *SRVRecord) String() string {
+	output := fmt.Sprintf("%s %s %d %d %d %s", s.Service, s.Proto, s.Priority, s.Weight, s.Port, s.Target)
+	return output
+}
+
+/*************SRV Record ******/
+
+/*************TXT Record ******/
+type TXTRecord struct {
+	Text string
+}
+
+func (t *TXTRecord) DecodeFromBytes(data []byte) error {
+	t.Text = string(data)
+}
+func (t *TXTRecord) SerializeSubType() ([]byte, error) {
+	return []byte(t.Text), nil
+}
+func (t *TXTRecord) String() string {
+	return t.Text
+}
+
+/*************TXT Record ******/
+
+/*************URI Record ******/
+type URIRecord struct {
+	Priority uint16
+	Weight   uint16
+	Target   string
+}
+
+func (u *URIRecord) DecodeFromBytes(data []byte) error {
+	u.Priority = binary.BigEndian.Uint16(data[0:2])
+	u.Weight = binary.BigEndian.Uint16(data[2:4])
+	u.Target = string(data[4:])
+}
+func (u *URIRecord) SerializeSubType() ([]byte, error) {
+	buf := make([]byte, 2)
+	binary.BigEndian.PutUint16(buf, u.Priority)
+	weight := make([]byte, 2)
+	binary.BigEndian.PutUint16(buf, u.Weight)
+	buf = append(buf, weight)
+	buf = append(buf, u.Target...)
+}
+func (u *URIRecord) String() string {
+	output := fmt.Sprintf("%d %d %s", u.Priority, u.Weight, u.Target)
+}
+
+/*************URI Record ******/
+
 func (n *DnsNLRI) DecodeFromBytes(data []byte) error {
-	n.RecordType = binary.BigEndian.Uint16(data[0:2])
-	n.KeyLen = binary.BigEndian.Uint16(data[2:4])
-	n.Key = string(data[4 : 4+n.KeyLen])
-	n.Value = string(data[4+n.KeyLen:])
+	nameLen := binary.BigEndian.Uint16(data[0:2])
+	n.Name = string(data[2 : 2+nameLen])
+	n.Type = DnsRecordType(binary.BigEndian.Uint16(data[2+nameLen : 4+nameLen]))
+	n.Class = binary.BigEndian.Uint16(uint16(1))
+	n.TTL = binary.BigEndian.Uint32(data[4+nameLen : 6+nameLen])
+	n.Rdlength = binary.BigEndian.Uint16(data[6+nameLen : 8+nameLen])
+	switch n.Type {
+	case A:
+		n.Data = ARecord{}
+		n.Data.DecodeSubTypeFromBytes(data[8+nameLen:])
+	case SRV:
+		n.Data = SRVRecord{}
+		n.Data.DecodeSubTypeFromBytes(data[8+nameLen:])
+	case TXT:
+		n.Data = TXTRecord{}
+		n.Data.DecodeSubTypeFromBytes(data[8+nameLen:])
+	case URI:
+		n.Data = URIRecord{}
+		n.Data.DecodeSubTypeFromBytes(data[8+nameLen:])
+	}
 	return nil
 }
 
 func (n *DnsNLRI) Serialize() ([]byte, error) {
 	buf := make([]byte, 2)
-	keyLenBuf := make([]byte, 2)
-	binary.BigEndian.PutUint16(buf, uint16(n.RecordType))
-	binary.BigEndian.PutUint16(keyLenBuf, n.KeyLen)
-	buf = append(buf, keyLenBuf[0])
-	buf = append(buf, keyLenBuf[1])
-	buf = append(buf, n.Key...)
-	buf = append(buf, n.Value...)
+	nameLen := uint16(len(n.Name))
+	binary.BigEndian.PutUint16(buf, nameLen)
+	buf = append(buf, n.Name...)
+
+	rType := make([]byte, 2)
+	binary.BigEndian.PutUint16(rType, n.Type)
+	buf = append(buf, rType)
+
+	ttl := make([]byte, 4)
+	binary.BigEndian.PutUint32(ttl, n.TTL)
+	buf = append(buf, ttl)
+
+	rdLen := make([]byte, 2)
+	binary.BigEndian.PutUint16(rdLen, n.Rdlength)
+	buf = append(buf, rdLen)
+
+	var data []byte
+	switch n.Type {
+	case A:
+		data = ARecord(n.Data).SerializeSubType()
+	case SRV:
+		data = SRVRecord(n.Data).SerializeSubType()
+	case TXT:
+		data = TXTRecord(n.Data).SerializeSubType()
+	case URI:
+		data = URIRecord(n.Data).SerializeSubType()
+	}
+	buf = append(buf, data)
 	return buf, nil
 
 }
@@ -8086,29 +8234,88 @@ func (n *DnsNLRI) SAFI() uint8 {
 	return SAFI_UNICAST
 }
 func (n *DnsNLRI) String() string {
-	return fmt.Sprintf("%s %s %s ", GetDnsRecordTypeName(DnsRecordType(n.RecordType)), n.Key, n.Value)
+	switch n.Type {
+	case A:
+		output = ARecord(n.Data).String()
+	case SRV:
+		output = SRVRecord(n.Data).String()
+	case TXT:
+		output = TXTRecord(n.Data).String()
+	case URI:
+		output = URIRecord(n.Data).String()
+	}
+	fullString := fmt.Sprintf("%s %s IN %d %s", GetDnsRecordTypeName(n.Type), n.Name, n.TTL, output)
+	return fullString
 }
 func (n *DnsNLRI) Len() int {
 	return 4 + len(n.Key) + len(n.Value)
 }
 
 func (n *DnsNLRI) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		RecordType string `json:"recordType"`
-		Key        string `json:"key"`
-		Value      string `json:"value"`
-	}{
-		RecordType: GetDnsRecordTypeName(DnsRecordType(n.RecordType)),
-		Key:        string(n.Key),
-		Value:      string(n.Value),
-	})
+	return json.Marshal(n)
 }
-func NewDnsNLRI(recordType, key, value string) *DnsNLRI {
-	key_len := len(key)
+
+type DnsNLRI struct {
+	Name     string
+	Type     DnsRecordType
+	Class    uint16
+	TTL      uint32
+	Rdlength uint16
+	Data     RData
+}
+
+func NewDnsARecordNLRI(name, ttl, address string) *DnsNLRI {
+	aRecord := ARecord{address}
 	return &DnsNLRI{
-		RecordType: uint16(GetDnsRecordType(recordType)),
-		KeyLen:     uint16(key_len),
-		Key:        key,
-		Value:      value,
+		Name:     name,
+		Type:     A,
+		Class:    uint16(1),
+		TTL:      uint32(ttl),
+		Rdlength: uint16(len(aRecord)),
+		Data:     aRecord,
+	}
+}
+
+func NewDnsSRVRecordNLRI(name, ttl, service, proto, priority, weight, port, target string) *DnsNLRI {
+	srvRecord := SRVRecord{
+		Proto:    proto,
+		Priority: uint16(priority),
+		Weight:   uint16(weight),
+		Port:     uint16(port),
+		Target:   target,
+	}
+	return &DnsNLRI{
+		Name:     name,
+		Type:     SRV,
+		Class:    uint16(1),
+		TTL:      uint32(ttl),
+		Rdlength: uint16(len(srvRecord)),
+		Data:     srvRecord,
+	}
+}
+func NewDnsTXTRecordNLRI(name, ttl, text string) *DnsNLRI {
+	txtRecord := TXTRecord{text}
+	return &DnsNLRI{
+		Name:     name,
+		Type:     TXT,
+		Class:    uint16(1),
+		TTL:      uint32(ttl),
+		Rdlength: uint16(len(txtRecord)),
+		Data:     txtRecord,
+	}
+}
+func NewDnsURIRecordNLRI(name, ttl, priority, weight, target string) *DnsNLRI {
+	uriRecord := URIRecord{
+		Priority: uint16(priority),
+		Weight:   uint16(weight),
+		Target:   target,
+	}
+	return &DnsNLRI{
+		Name:     name,
+		Type:     URI,
+		Class:    uint16(1),
+		TTL:      uint32(ttl),
+		Rdlength: uint16(len(uriRecord)),
+		Data:     uriRecord,
 	}
 }
