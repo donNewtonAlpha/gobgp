@@ -8062,19 +8062,19 @@ type ARecord struct {
 	IPAddress uint32
 }
 
-func (a ARecord) DecodeSubTypeFromBytes(data []byte) error {
+func (a *ARecord) DecodeSubTypeFromBytes(data []byte) error {
 	a.IPAddress = binary.BigEndian.Uint32(data)
 	return nil
 }
-func (a ARecord) SerializeSubType() ([]byte, error) {
+func (a *ARecord) SerializeSubType() ([]byte, error) {
 	buf := make([]byte, 4)
 	binary.BigEndian.PutUint32(buf, a.IPAddress)
 	return buf, nil
 }
-func (a ARecord) String() string {
+func (a *ARecord) String() string {
 	data := make([]byte, 4)
 	binary.BigEndian.PutUint32(data, a.IPAddress)
-	output := fmt.Sprintf("%d.%d.%d.%d", data[3], data[2], data[1], data[0])
+	output := fmt.Sprintf("%d.%d.%d.%d", data[0], data[1], data[2], data[3])
 	return output
 }
 
@@ -8091,7 +8091,7 @@ type SRVRecord struct {
 	Target   string
 }
 
-func (s SRVRecord) DecodeSubTypeFromBytes(data []byte) error {
+func (s *SRVRecord) DecodeSubTypeFromBytes(data []byte) error {
 	serviceLen := binary.BigEndian.Uint16(data[0:2])
 	s.Service = string(data[2 : 2+serviceLen])
 	protoLen := binary.BigEndian.Uint16(data[2+serviceLen : 4+serviceLen])
@@ -8103,7 +8103,7 @@ func (s SRVRecord) DecodeSubTypeFromBytes(data []byte) error {
 	return nil
 }
 
-func (s SRVRecord) SerializeSubType() ([]byte, error) {
+func (s *SRVRecord) SerializeSubType() ([]byte, error) {
 	buf := make([]byte, 2)
 	binary.BigEndian.PutUint16(buf, uint16(len(s.Service)))
 	buf = append(buf, s.Service...)
@@ -8123,7 +8123,7 @@ func (s SRVRecord) SerializeSubType() ([]byte, error) {
 	buf = append(buf, s.Target...)
 	return buf, nil
 }
-func (s SRVRecord) String() string {
+func (s *SRVRecord) String() string {
 	output := fmt.Sprintf("%s %s %d %d %d %s", s.Service, s.Proto, s.Priority, s.Weight, s.Port, s.Target)
 	return output
 }
@@ -8135,14 +8135,16 @@ type TXTRecord struct {
 	Text string
 }
 
-func (t TXTRecord) DecodeSubTypeFromBytes(data []byte) error {
+func (t *TXTRecord) DecodeSubTypeFromBytes(data []byte) error {
+
 	t.Text = string(data)
+
 	return nil
 }
-func (t TXTRecord) SerializeSubType() ([]byte, error) {
+func (t *TXTRecord) SerializeSubType() ([]byte, error) {
 	return []byte(t.Text), nil
 }
-func (t TXTRecord) String() string {
+func (t *TXTRecord) String() string {
 	return t.Text
 }
 
@@ -8155,13 +8157,13 @@ type URIRecord struct {
 	Target   string
 }
 
-func (u URIRecord) DecodeSubTypeFromBytes(data []byte) error {
+func (u *URIRecord) DecodeSubTypeFromBytes(data []byte) error {
 	u.Priority = binary.BigEndian.Uint16(data[0:2])
 	u.Weight = binary.BigEndian.Uint16(data[2:4])
 	u.Target = string(data[4:])
 	return nil
 }
-func (u URIRecord) SerializeSubType() ([]byte, error) {
+func (u *URIRecord) SerializeSubType() ([]byte, error) {
 	buf := make([]byte, 2)
 	binary.BigEndian.PutUint16(buf, u.Priority)
 	weight := make([]byte, 2)
@@ -8170,7 +8172,7 @@ func (u URIRecord) SerializeSubType() ([]byte, error) {
 	buf = append(buf, u.Target...)
 	return buf, nil
 }
-func (u URIRecord) String() string {
+func (u *URIRecord) String() string {
 	output := fmt.Sprintf("%d %d %s", u.Priority, u.Weight, u.Target)
 	return output
 }
@@ -8178,9 +8180,7 @@ func (u URIRecord) String() string {
 /*************URI Record ******/
 
 func (n *DnsNLRI) DecodeFromBytes(data []byte) error {
-	size := len(data)
 	nameLen := binary.BigEndian.Uint16(data[0:2])
-	fmt.Printf("NameLen is %d data len is %d\n", nameLen, size)
 	n.Name = string(data[2 : 2+nameLen])
 	n.Type = DnsRecordType(binary.BigEndian.Uint16(data[2+nameLen : 4+nameLen]))
 	n.Class = uint16(1)
@@ -8188,18 +8188,22 @@ func (n *DnsNLRI) DecodeFromBytes(data []byte) error {
 	n.Rdlength = binary.BigEndian.Uint16(data[8+nameLen : 10+nameLen])
 	switch n.Type {
 	case A:
-		n.Data = ARecord{}
-		n.Data.DecodeSubTypeFromBytes(data[10+nameLen:])
+		aRec := &ARecord{}
+		aRec.DecodeSubTypeFromBytes(data[10+nameLen:])
+		n.Data = aRec
 	case SRV:
 		n.Data = &SRVRecord{}
 		n.Data.DecodeSubTypeFromBytes(data[10+nameLen:])
 	case TXT:
-		n.Data = &TXTRecord{}
-		n.Data.DecodeSubTypeFromBytes(data[10+nameLen:])
+		txt := &TXTRecord{}
+		txt.DecodeSubTypeFromBytes(data[10+nameLen:])
+		fmt.Println(txt)
+		n.Data = txt
 	case URI:
 		n.Data = &URIRecord{}
 		n.Data.DecodeSubTypeFromBytes(data[10+nameLen:])
 	}
+	fmt.Println(*n)
 	return nil
 }
 
@@ -8224,13 +8228,13 @@ func (n *DnsNLRI) Serialize() ([]byte, error) {
 	var data []byte
 	switch n.Type {
 	case A:
-		data, _ = n.Data.(ARecord).SerializeSubType()
+		data, _ = n.Data.(*ARecord).SerializeSubType()
 	case SRV:
-		data, _ = n.Data.(SRVRecord).SerializeSubType()
+		data, _ = n.Data.(*SRVRecord).SerializeSubType()
 	case TXT:
-		data, _ = n.Data.(TXTRecord).SerializeSubType()
+		data, _ = n.Data.(*TXTRecord).SerializeSubType()
 	case URI:
-		data, _ = n.Data.(URIRecord).SerializeSubType()
+		data, _ = n.Data.(*URIRecord).SerializeSubType()
 	}
 	buf = append(buf, data...)
 	return buf, nil
@@ -8247,13 +8251,13 @@ func (n *DnsNLRI) String() string {
 	var output string
 	switch n.Type {
 	case A:
-		output = n.Data.(ARecord).String()
+		output = n.Data.(*ARecord).String()
 	case SRV:
-		output = n.Data.(SRVRecord).String()
+		output = n.Data.(*SRVRecord).String()
 	case TXT:
-		output = n.Data.(TXTRecord).String()
+		output = n.Data.(*TXTRecord).String()
 	case URI:
-		output = n.Data.(URIRecord).String()
+		output = n.Data.(*URIRecord).String()
 	}
 	fullString := fmt.Sprintf("%s %s IN %d %s", GetDnsRecordTypeName(n.Type), n.Name, n.TTL, output)
 	return fullString
@@ -8276,9 +8280,12 @@ type DnsNLRI struct {
 }
 
 func NewDnsARecordNLRI(name string, ttl int, address string) *DnsNLRI {
+	fmt.Printf("NewDnsARecord name:%s ttl:%d address:%s", name, ttl, address)
 	ip := net.ParseIP(address)
-	aRecord := ARecord{binary.BigEndian.Uint32([]byte(ip))}
-	return &DnsNLRI{
+	fmt.Println([]byte(ip.To4()))
+	aRecord := &ARecord{binary.BigEndian.Uint32([]byte(ip.To4()))}
+	fmt.Println(aRecord)
+	nlri := DnsNLRI{
 		Name:     name,
 		Type:     A,
 		Class:    uint16(1),
@@ -8286,10 +8293,12 @@ func NewDnsARecordNLRI(name string, ttl int, address string) *DnsNLRI {
 		Rdlength: uint16(4),
 		Data:     aRecord,
 	}
+	fmt.Println(nlri)
+	return &nlri
 }
 
 func NewDnsSRVRecordNLRI(name string, ttl int, service string, proto string, priority int, weight int, port int, target string) *DnsNLRI {
-	srvRecord := SRVRecord{
+	srvRecord := &SRVRecord{
 		Service:  service,
 		Proto:    proto,
 		Priority: uint16(priority),
@@ -8308,7 +8317,7 @@ func NewDnsSRVRecordNLRI(name string, ttl int, service string, proto string, pri
 	}
 }
 func NewDnsTXTRecordNLRI(name string, ttl int, text string) *DnsNLRI {
-	txtRecord := TXTRecord{text}
+	txtRecord := &TXTRecord{text}
 	return &DnsNLRI{
 		Name:     name,
 		Type:     TXT,
@@ -8319,7 +8328,7 @@ func NewDnsTXTRecordNLRI(name string, ttl int, text string) *DnsNLRI {
 	}
 }
 func NewDnsURIRecordNLRI(name string, ttl int, priority int, weight int, target string) *DnsNLRI {
-	uriRecord := URIRecord{
+	uriRecord := &URIRecord{
 		Priority: uint16(priority),
 		Weight:   uint16(weight),
 		Target:   target,
