@@ -8178,25 +8178,27 @@ func (u URIRecord) String() string {
 /*************URI Record ******/
 
 func (n *DnsNLRI) DecodeFromBytes(data []byte) error {
+	size := len(data)
 	nameLen := binary.BigEndian.Uint16(data[0:2])
+	fmt.Printf("NameLen is %d data len is %d\n", nameLen, size)
 	n.Name = string(data[2 : 2+nameLen])
 	n.Type = DnsRecordType(binary.BigEndian.Uint16(data[2+nameLen : 4+nameLen]))
 	n.Class = uint16(1)
-	n.TTL = binary.BigEndian.Uint32(data[4+nameLen : 6+nameLen])
-	n.Rdlength = binary.BigEndian.Uint16(data[6+nameLen : 8+nameLen])
+	n.TTL = binary.BigEndian.Uint32(data[4+nameLen : 8+nameLen])
+	n.Rdlength = binary.BigEndian.Uint16(data[8+nameLen : 10+nameLen])
 	switch n.Type {
 	case A:
 		n.Data = ARecord{}
-		n.Data.DecodeSubTypeFromBytes(data[8+nameLen:])
+		n.Data.DecodeSubTypeFromBytes(data[10+nameLen:])
 	case SRV:
 		n.Data = &SRVRecord{}
-		n.Data.DecodeSubTypeFromBytes(data[8+nameLen:])
+		n.Data.DecodeSubTypeFromBytes(data[10+nameLen:])
 	case TXT:
 		n.Data = &TXTRecord{}
-		n.Data.DecodeSubTypeFromBytes(data[8+nameLen:])
+		n.Data.DecodeSubTypeFromBytes(data[10+nameLen:])
 	case URI:
 		n.Data = &URIRecord{}
-		n.Data.DecodeSubTypeFromBytes(data[8+nameLen:])
+		n.Data.DecodeSubTypeFromBytes(data[10+nameLen:])
 	}
 	return nil
 }
