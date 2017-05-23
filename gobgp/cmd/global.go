@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"bytes"
 
 	"github.com/osrg/gobgp/config"
 	"github.com/osrg/gobgp/packet/bgp"
@@ -783,35 +784,38 @@ func ParsePath(rf bgp.RouteFamily, args []string) (*table.Path, error) {
 		for i := 0; i < len(args); i++ {
 			fmt.Println(args[i])
 		}
-		fmt.Println("right here")
+		//fmt.Println("right here")
 		m := extractReserved(args, []string{"rt:=", "name:=", "ttl:=", "data:="})
+
+		//Default TTL
+		ttl := 60
+
+		if (len(m["ttl:="]) != 1) {
+			ttl, err = strconv.Atoi(m["ttl:="][0])
+		}
 
 		if len(m["rt:="]) != 1 {
 			return nil, fmt.Errorf("dns record type missing")
+		} else if (len(m["name:="]) != 1) {
+			return nil, fmt.Errorf("dns name missing")
 		} else {
-			switch m["rt:="]:
-				case "A":
-					
-			arg0 := args[0]
-			arg1 := args[2]
-			x := 0
-			for i := 3; i < len(args); i++ {
-				if args[i] == ";" {
-					x = i
+			switch m["rt:="][0]{
+
+			case "A":
+				nlri = bgp.NewDnsARecordNLRI(m["name:="][0], ttl, m["data:="][0])
+			case "TXT":
+				var buffer bytes.Buffer
+				for i:= 0; i < len(m["data:="]); i++ {
+					buffer.WriteString(m["data:="][i])
 				}
+				nlri = bgp.NewDnsTXTRecordNLRI(m["name:="][0], ttl, buffer.String())
+			case "SRV":
+				fmt.Println("SRV records not yet implemented")
+				nlri, err = nil, fmt.Errorf("Not yet implemented")
+			case "URI":
+				fmt.Println("SRV records not yet implemented")
+				nlri, err = nil, fmt.Errorf("Not yet implemented")
 			}
-			arg2 := ""
-			for i := 3; i < len(args); i++ {
-				if i < x {
-					arg1 = arg1 + " " + args[i]
-				}
-				if i > x {
-					arg2 = arg2 + " " + args[i]
-				}
-			}
-			nlri = bgp.NewDnsNLRI(arg0, arg1, arg2)
-		} else {
-			nlri = bgp.NewDnsNLRI(args[0], args[1], args[2])
 		}
 	case bgp.RF_OPAQUE:
 		m := extractReserved(args, []string{"key", "value"})
