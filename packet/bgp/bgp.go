@@ -8059,26 +8059,57 @@ type RData interface {
 
 /************* A Record ******/
 type ARecord struct {
-	IPAddress uint32
+	Ip net.IP
 }
 
 func (a *ARecord) DecodeSubTypeFromBytes(data []byte) error {
-	a.IPAddress = binary.BigEndian.Uint32(data)
+	a.Ip = net.IP(data)
 	return nil
 }
 func (a *ARecord) SerializeSubType() ([]byte, error) {
-	buf := make([]byte, 4)
-	binary.BigEndian.PutUint32(buf, a.IPAddress)
-	return buf, nil
+	return []byte(a.Ip), nil
 }
 func (a *ARecord) String() string {
-	data := make([]byte, 4)
-	binary.BigEndian.PutUint32(data, a.IPAddress)
-	output := fmt.Sprintf("%d.%d.%d.%d", data[0], data[1], data[2], data[3])
-	return output
+	return fmt.Sprint(a.Ip)
 }
 
 /*************A Record ******/
+
+/*************AAAA Record *****/
+type AAAARecord struct {
+	Ip net.IP
+}
+
+func (a *AAAARecord) DecodeSubTypeFromBytes(data []byte) error {
+	a.Ip = net.IP(data)
+	return nil
+}
+func (a *AAAARecord) SerializeSubType() ([]byte, error) {
+	return []byte(a.Ip), nil
+}
+func (a *AAAARecord) String() string {
+	return fmt.Sprint(a.Ip)
+}
+
+/*************AAAA Record *****/
+
+/*************PTR Record ******/
+type PTRRecord struct {
+	PTRDName string
+}
+
+func (p *PTRRecord) DecodeSubTypeFromBytes(data []byte) error {
+	p.PTRDName = string(data)
+	return nil
+}
+func (p *PTRRecord) SerializeSubType() ([]byte, error) {
+	return []byte(p.PTRDName), nil
+}
+func (p *PTRRecord) String() string {
+	return p.PTRDName
+}
+
+/*************PTR Record ******/
 
 /*************SRV Record ******/
 
@@ -8191,19 +8222,25 @@ func (n *DnsNLRI) DecodeFromBytes(data []byte) error {
 		aRec := &ARecord{}
 		aRec.DecodeSubTypeFromBytes(data[10+nameLen:])
 		n.Data = aRec
+	case AAAA:
+		aaaaRec := &AAAARecord{}
+		aaaaRec.DecodeSubTypeFromBytes(data[10+nameLen:])
+		n.Data = aaaaRec
+	case PTR:
+		ptrRec := &PTRRecord{}
+		ptrRec.DecodeSubTypeFromBytes(data[10+nameLen:])
+		n.Data = ptrRec
 	case SRV:
 		n.Data = &SRVRecord{}
 		n.Data.DecodeSubTypeFromBytes(data[10+nameLen:])
 	case TXT:
 		txt := &TXTRecord{}
 		txt.DecodeSubTypeFromBytes(data[10+nameLen:])
-		fmt.Println(txt)
 		n.Data = txt
 	case URI:
 		n.Data = &URIRecord{}
 		n.Data.DecodeSubTypeFromBytes(data[10+nameLen:])
 	}
-	fmt.Println(*n)
 	return nil
 }
 
@@ -8229,6 +8266,10 @@ func (n *DnsNLRI) Serialize() ([]byte, error) {
 	switch n.Type {
 	case A:
 		data, _ = n.Data.(*ARecord).SerializeSubType()
+	case AAAA:
+		data, _ = n.Data.(*AAAARecord).SerializeSubType()
+	case PTR:
+		data, _ = n.Data.(*PTRRecord).SerializeSubType()
 	case SRV:
 		data, _ = n.Data.(*SRVRecord).SerializeSubType()
 	case TXT:
@@ -8252,6 +8293,10 @@ func (n *DnsNLRI) String() string {
 	switch n.Type {
 	case A:
 		output = n.Data.(*ARecord).String()
+	case AAAA:
+		output = n.Data.(*AAAARecord).String()
+	case PTR:
+		output = n.Data.(*PTRRecord).String()
 	case SRV:
 		output = n.Data.(*SRVRecord).String()
 	case TXT:
@@ -8280,11 +8325,8 @@ type DnsNLRI struct {
 }
 
 func NewDnsARecordNLRI(name string, ttl int, address string) *DnsNLRI {
-	fmt.Printf("NewDnsARecord name:%s ttl:%d address:%s", name, ttl, address)
-	ip := net.ParseIP(address)
-	fmt.Println([]byte(ip.To4()))
-	aRecord := &ARecord{binary.BigEndian.Uint32([]byte(ip.To4()))}
-	fmt.Println(aRecord)
+	ip := net.ParseIP(address).To4()
+	aRecord := &ARecord{ip}
 	nlri := DnsNLRI{
 		Name:     name,
 		Type:     A,
@@ -8293,10 +8335,33 @@ func NewDnsARecordNLRI(name string, ttl int, address string) *DnsNLRI {
 		Rdlength: uint16(4),
 		Data:     aRecord,
 	}
-	fmt.Println(nlri)
 	return &nlri
 }
-
+func NewDnsAAAARecordNLRI(name string, ttl int, address string) *DnsNLRI {
+	ip := net.ParseIP(address)
+	aRecord := &ARecord{ip}
+	nlri := DnsNLRI{
+		Name:     name,
+		Type:     A,
+		Class:    uint16(1),
+		TTL:      uint32(ttl),
+		Rdlength: uint16(4),
+		Data:     aRecord,
+	}
+	return &nlri
+}
+func NewDnsPTRRecordNLRI(name string, ttl int, ptrDName string) *DnsNLRI {
+	ptrRecord := &PTRRecord{ptrDName}
+	nlri := DnsNLRI{
+		Name:     name,
+		Type:     A,
+		Class:    uint16(1),
+		TTL:      uint32(ttl),
+		Rdlength: uint16(4),
+		Data:     ptrRecord,
+	}
+	return &nlri
+}
 func NewDnsSRVRecordNLRI(name string, ttl int, service string, proto string, priority int, weight int, port int, target string) *DnsNLRI {
 	srvRecord := &SRVRecord{
 		Service:  service,
