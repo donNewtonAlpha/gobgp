@@ -8137,20 +8137,27 @@ func (s *SRVRecord) DecodeSubTypeFromBytes(data []byte) error {
 func (s *SRVRecord) SerializeSubType() ([]byte, error) {
 	buf := make([]byte, 2)
 	binary.BigEndian.PutUint16(buf, uint16(len(s.Service)))
+
 	buf = append(buf, s.Service...)
+
 	protoLen := make([]byte, 2)
 	binary.BigEndian.PutUint16(protoLen, uint16(len(s.Proto)))
 	buf = append(buf, protoLen...)
+
 	buf = append(buf, s.Proto...)
+
 	priority := make([]byte, 2)
 	binary.BigEndian.PutUint16(priority, s.Priority)
+	buf = append(buf, priority...)
+
 	weight := make([]byte, 2)
 	binary.BigEndian.PutUint16(weight, s.Weight)
+	buf = append(buf, weight...)
+
 	port := make([]byte, 2)
 	binary.BigEndian.PutUint16(port, s.Port)
-	buf = append(buf, priority...)
-	buf = append(buf, weight...)
 	buf = append(buf, port...)
+
 	buf = append(buf, s.Target...)
 	return buf, nil
 }
@@ -8198,7 +8205,7 @@ func (u *URIRecord) SerializeSubType() ([]byte, error) {
 	buf := make([]byte, 2)
 	binary.BigEndian.PutUint16(buf, u.Priority)
 	weight := make([]byte, 2)
-	binary.BigEndian.PutUint16(buf, u.Weight)
+	binary.BigEndian.PutUint16(weight, u.Weight)
 	buf = append(buf, weight...)
 	buf = append(buf, u.Target...)
 	return buf, nil
@@ -8308,6 +8315,9 @@ func (n *DnsNLRI) String() string {
 	return fullString
 }
 func (n *DnsNLRI) Len() int {
+	if n.Type == SRV {
+		return len(n.Name) + 14 + int(n.Rdlength)
+	}
 	return len(n.Name) + 10 + int(n.Rdlength)
 }
 
@@ -8372,7 +8382,7 @@ func NewDnsSRVRecordNLRI(name string, ttl int, service string, proto string, pri
 		Target:   target,
 	}
 	myLen := len(service) + len(proto) + len(target) + 6
-	return &DnsNLRI{
+	nrli := DnsNLRI{
 		Name:     name,
 		Type:     SRV,
 		Class:    uint16(1),
@@ -8380,6 +8390,7 @@ func NewDnsSRVRecordNLRI(name string, ttl int, service string, proto string, pri
 		Rdlength: uint16(myLen),
 		Data:     srvRecord,
 	}
+	return &nrli
 }
 func NewDnsTXTRecordNLRI(name string, ttl int, text string) *DnsNLRI {
 	txtRecord := &TXTRecord{text}
