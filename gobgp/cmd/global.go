@@ -802,7 +802,7 @@ func ParsePath(rf bgp.RouteFamily, args []string) (*table.Path, error) {
 			switch m["rt:="][0]{
 
 			case "A":
-				if (len(m["data:="] == 1)) {
+				if (len(m["data:="]) == 1) {
 					nlri = bgp.NewDnsARecordNLRI(m["name:="][0], ttl, m["data:="][0])
 				} else {
 					err = fmt.Errorf("A record, data field is of the wrong size," +
@@ -815,7 +815,7 @@ func ParsePath(rf bgp.RouteFamily, args []string) (*table.Path, error) {
 				}
 				nlri = bgp.NewDnsTXTRecordNLRI(m["name:="][0], ttl, buffer.String())
 			case "SRV":
-				if len(m["data:="] < 6) {
+				if len(m["data:="]) < 6 {
 					err = fmt.Errorf("missing elements for this SRV record")
 				} else {
 					service := m["data:="][0]
@@ -830,7 +830,7 @@ func ParsePath(rf bgp.RouteFamily, args []string) (*table.Path, error) {
 				}
 
 			case "URI":
-				if len(m["data:="] < 3) {
+				if len(m["data:="]) < 3 {
 					err = fmt.Errorf("missing elements for this URI record")
 				} else {
 					priority, _ := strconv.Atoi(m["data:="][0])
