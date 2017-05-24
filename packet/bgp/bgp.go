@@ -8121,10 +8121,10 @@ type SRVRecord struct {
 }
 
 func (s *SRVRecord) DecodeSubTypeFromBytes(data []byte) error {
-	s.Priority = binary.BigEndian.Uint16(data[4+serviceLen+protoLen : 6+serviceLen+protoLen])
-	s.Weight = binary.BigEndian.Uint16(data[6+serviceLen+protoLen : 8+serviceLen+protoLen])
-	s.Port = binary.BigEndian.Uint16(data[8+serviceLen+protoLen : 10+serviceLen+protoLen])
-	s.Target = string(data[10+serviceLen+protoLen:])
+	s.Priority = binary.BigEndian.Uint16(data[0:2])
+	s.Weight = binary.BigEndian.Uint16(data[2:4])
+	s.Port = binary.BigEndian.Uint16(data[4:6])
+	s.Target = string(data[6:])
 	return nil
 }
 
@@ -8358,7 +8358,7 @@ func NewDnsSRVRecordNLRI(name string, ttl int, priority int, weight int, port in
 		Port:     uint16(port),
 		Target:   target,
 	}
-	myLen := len(service) + len(proto) + len(target) + 6
+	myLen := len(target) + 6
 	nrli := DnsNLRI{
 		Name:     name,
 		Type:     SRV,
