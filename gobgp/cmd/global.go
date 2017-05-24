@@ -790,19 +790,24 @@ func ParsePath(rf bgp.RouteFamily, args []string) (*table.Path, error) {
 		//Default TTL
 		ttl := 60
 
-		if (len(m["ttl:="]) != 1) {
+		if (len(m["ttl:="]) == 1) {
 			ttl, err = strconv.Atoi(m["ttl:="][0])
 		}
 
 		if len(m["rt:="]) != 1 {
 			return nil, fmt.Errorf("dns record type missing")
 		} else if (len(m["name:="]) != 1) {
-			return nil, fmt.Errorf("dns name missing")
+			return nil, fmt.Errorf("dns name missing or invalid (not a continuous string)")
 		} else {
 			switch m["rt:="][0]{
 
 			case "A":
-				nlri = bgp.NewDnsARecordNLRI(m["name:="][0], ttl, m["data:="][0])
+				if (len(m["data:="] == 1)) {
+					nlri = bgp.NewDnsARecordNLRI(m["name:="][0], ttl, m["data:="][0])
+				} else {
+					err = fmt.Errorf("A record, data field is of the wrong size," +
+						" expected 1, got %d", len(m["data:="]))
+				}
 			case "TXT":
 				var buffer bytes.Buffer
 				for i:= 0; i < len(m["data:="]); i++ {
@@ -810,11 +815,44 @@ func ParsePath(rf bgp.RouteFamily, args []string) (*table.Path, error) {
 				}
 				nlri = bgp.NewDnsTXTRecordNLRI(m["name:="][0], ttl, buffer.String())
 			case "SRV":
-				fmt.Println("SRV records not yet implemented")
-				nlri, err = nil, fmt.Errorf("Not yet implemented")
+				if len(m["data:="] < 6) {
+					err = fmt.Errorf("missing elements for this SRV record")
+				} else {
+					service := m["data:="][0]
+					proto := m["data:="][1]
+					priority, _ := strconv.Atoi(m["data:="][2])
+					weight, _ := strconv.Atoi(m["data:="][3])
+					port, _ := strconv.Atoi(m["data:="][4])
+					target := m["data:="][5]
+
+					nlri = bgp.NewDnsSRVRecordNLRI(m["name:="], ttl, service, proto, priority,
+						weight, port, target)
+				}
+
 			case "URI":
-				fmt.Println("SRV records not yet implemented")
-				nlri, err = nil, fmt.Errorf("Not yet implemented")
+				if len(m["data:="] < 3) {
+					err = fmt.Errorf("missing elements for this URI record")
+				} else {
+					priority, _ := strconv.Atoi(m["data:="][0])
+					weight, _ := strconv.Atoi(m["data:="][1])
+					target := m["data:="][2]
+
+					nlri = bgp.NewDnsURIRecordNLRI(m["name:="], ttl,  priority, weight, target)
+				}
+
+			case "AAAA":
+				if (len(m["data:="]) == 1) {
+					nlri = bgp.NewDnsAAAARecordNLRI(m["name:="][0], ttl, m["data:="][0])
+				} else {
+					err = fmt.Errorf("AAAA record, data field is of the wrong size,"+
+						" expected 1, got %d", len(m["data:="]))
+				}
+			case "PTR":
+				var buffer bytes.Buffer
+				for i:= 0; i < len(m["data:="]); i++ {
+					buffer.WriteString(m["data:="][i])
+				}
+				nlri = bgp.NewDnsPTRRecordNLRI(m["name:="][0], ttl, buffer.String())
 			}
 		}
 	case bgp.RF_OPAQUE:
