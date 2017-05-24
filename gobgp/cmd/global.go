@@ -825,7 +825,7 @@ func ParsePath(rf bgp.RouteFamily, args []string) (*table.Path, error) {
 					port, _ := strconv.Atoi(m["data:="][4])
 					target := m["data:="][5]
 
-					nlri = bgp.NewDnsSRVRecordNLRI(m["name:="], ttl, service, proto, priority,
+					nlri = bgp.NewDnsSRVRecordNLRI(m["name:="][0], ttl, service, proto, priority,
 						weight, port, target)
 				}
 
@@ -837,7 +837,7 @@ func ParsePath(rf bgp.RouteFamily, args []string) (*table.Path, error) {
 					weight, _ := strconv.Atoi(m["data:="][1])
 					target := m["data:="][2]
 
-					nlri = bgp.NewDnsURIRecordNLRI(m["name:="], ttl,  priority, weight, target)
+					nlri = bgp.NewDnsURIRecordNLRI(m["name:="][0], ttl,  priority, weight, target)
 				}
 
 			case "AAAA":
