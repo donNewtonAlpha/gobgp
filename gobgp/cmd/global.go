@@ -815,17 +815,15 @@ func ParsePath(rf bgp.RouteFamily, args []string) (*table.Path, error) {
 				}
 				nlri = bgp.NewDnsTXTRecordNLRI(m["name:="][0], ttl, buffer.String())
 			case "SRV":
-				if len(m["data:="]) < 6 {
+				if len(m["data:="]) < 4 {
 					err = fmt.Errorf("missing elements for this SRV record")
 				} else {
-					service := m["data:="][0]
-					proto := m["data:="][1]
-					priority, _ := strconv.Atoi(m["data:="][2])
-					weight, _ := strconv.Atoi(m["data:="][3])
-					port, _ := strconv.Atoi(m["data:="][4])
-					target := m["data:="][5]
+					priority, _ := strconv.Atoi(m["data:="][0])
+					weight, _ := strconv.Atoi(m["data:="][1])
+					port, _ := strconv.Atoi(m["data:="][2])
+					target := m["data:="][3]
 
-					nlri = bgp.NewDnsSRVRecordNLRI(m["name:="][0], ttl, service, proto, priority,
+					nlri = bgp.NewDnsSRVRecordNLRI(m["name:="][0], ttl, priority,
 						weight, port, target)
 				}
 
