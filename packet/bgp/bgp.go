@@ -8114,8 +8114,6 @@ func (p *PTRRecord) String() string {
 /*************SRV Record ******/
 
 type SRVRecord struct {
-	Service  string
-	Proto    string
 	Priority uint16
 	Weight   uint16
 	Port     uint16
@@ -8123,32 +8121,16 @@ type SRVRecord struct {
 }
 
 func (s *SRVRecord) DecodeSubTypeFromBytes(data []byte) error {
-	serviceLen := binary.BigEndian.Uint16(data[0:2])
-	s.Service = string(data[2 : 2+serviceLen])
-	protoLen := binary.BigEndian.Uint16(data[2+serviceLen : 4+serviceLen])
-	s.Proto = string(data[4+serviceLen : 4+serviceLen+protoLen])
-	s.Priority = binary.BigEndian.Uint16(data[4+serviceLen+protoLen : 6+serviceLen+protoLen])
-	s.Weight = binary.BigEndian.Uint16(data[6+serviceLen+protoLen : 8+serviceLen+protoLen])
-	s.Port = binary.BigEndian.Uint16(data[8+serviceLen+protoLen : 10+serviceLen+protoLen])
-	s.Target = string(data[10+serviceLen+protoLen:])
+	s.Priority = binary.BigEndian.Uint16(data[0:2])
+	s.Weight = binary.BigEndian.Uint16(data[2:4])
+	s.Port = binary.BigEndian.Uint16(data[4:6])
+	s.Target = string(data[6:])
 	return nil
 }
 
 func (s *SRVRecord) SerializeSubType() ([]byte, error) {
 	buf := make([]byte, 2)
-	binary.BigEndian.PutUint16(buf, uint16(len(s.Service)))
-
-	buf = append(buf, s.Service...)
-
-	protoLen := make([]byte, 2)
-	binary.BigEndian.PutUint16(protoLen, uint16(len(s.Proto)))
-	buf = append(buf, protoLen...)
-
-	buf = append(buf, s.Proto...)
-
-	priority := make([]byte, 2)
-	binary.BigEndian.PutUint16(priority, s.Priority)
-	buf = append(buf, priority...)
+	binary.BigEndian.PutUint16(buf, s.Priority)
 
 	weight := make([]byte, 2)
 	binary.BigEndian.PutUint16(weight, s.Weight)
@@ -8162,7 +8144,7 @@ func (s *SRVRecord) SerializeSubType() ([]byte, error) {
 	return buf, nil
 }
 func (s *SRVRecord) String() string {
-	output := fmt.Sprintf("%s %s %d %d %d %s", s.Service, s.Proto, s.Priority, s.Weight, s.Port, s.Target)
+	output := fmt.Sprintf("%d %d %d %s", s.Priority, s.Weight, s.Port, s.Target)
 	return output
 }
 
@@ -8315,9 +8297,6 @@ func (n *DnsNLRI) String() string {
 	return fullString
 }
 func (n *DnsNLRI) Len() int {
-	if n.Type == SRV {
-		return len(n.Name) + 14 + int(n.Rdlength)
-	}
 	return len(n.Name) + 10 + int(n.Rdlength)
 }
 
@@ -8372,16 +8351,14 @@ func NewDnsPTRRecordNLRI(name string, ttl int, ptrDName string) *DnsNLRI {
 	}
 	return &nlri
 }
-func NewDnsSRVRecordNLRI(name string, ttl int, service string, proto string, priority int, weight int, port int, target string) *DnsNLRI {
+func NewDnsSRVRecordNLRI(name string, ttl int, priority int, weight int, port int, target string) *DnsNLRI {
 	srvRecord := &SRVRecord{
-		Service:  service,
-		Proto:    proto,
 		Priority: uint16(priority),
 		Weight:   uint16(weight),
 		Port:     uint16(port),
 		Target:   target,
 	}
-	myLen := len(service) + len(proto) + len(target) + 6
+	myLen := len(target) + 6
 	nrli := DnsNLRI{
 		Name:     name,
 		Type:     SRV,
