@@ -799,11 +799,16 @@ func ParsePath(rf bgp.RouteFamily, args []string) (*table.Path, error) {
 		} else if (len(m["name:="]) != 1) {
 			return nil, fmt.Errorf("dns name missing or invalid (not a continuous string)")
 		} else {
+			name := m["name:="][0]
+			if (name[len(name) - 1] != '.'){
+				name = name + "."
+			}
+
 			switch m["rt:="][0]{
 
 			case "A":
 				if (len(m["data:="]) == 1) {
-					nlri = bgp.NewDnsARecordNLRI(m["name:="][0], ttl, m["data:="][0])
+					nlri = bgp.NewDnsARecordNLRI(name, ttl, m["data:="][0])
 				} else {
 					err = fmt.Errorf("A record, data field is of the wrong size," +
 						" expected 1, got %d", len(m["data:="]))
@@ -813,7 +818,7 @@ func ParsePath(rf bgp.RouteFamily, args []string) (*table.Path, error) {
 				for i:= 0; i < len(m["data:="]); i++ {
 					buffer.WriteString(m["data:="][i])
 				}
-				nlri = bgp.NewDnsTXTRecordNLRI(m["name:="][0], ttl, buffer.String())
+				nlri = bgp.NewDnsTXTRecordNLRI(name, ttl, buffer.String())
 			case "SRV":
 				if len(m["data:="]) < 4 {
 					err = fmt.Errorf("missing elements for this SRV record")
@@ -823,7 +828,7 @@ func ParsePath(rf bgp.RouteFamily, args []string) (*table.Path, error) {
 					port, _ := strconv.Atoi(m["data:="][2])
 					target := m["data:="][3]
 
-					nlri = bgp.NewDnsSRVRecordNLRI(m["name:="][0], ttl, priority,
+					nlri = bgp.NewDnsSRVRecordNLRI(name, ttl, priority,
 						weight, port, target)
 				}
 
@@ -835,12 +840,12 @@ func ParsePath(rf bgp.RouteFamily, args []string) (*table.Path, error) {
 					weight, _ := strconv.Atoi(m["data:="][1])
 					target := m["data:="][2]
 
-					nlri = bgp.NewDnsURIRecordNLRI(m["name:="][0], ttl,  priority, weight, target)
+					nlri = bgp.NewDnsURIRecordNLRI(name, ttl,  priority, weight, target)
 				}
 
 			case "AAAA":
 				if (len(m["data:="]) == 1) {
-					nlri = bgp.NewDnsAAAARecordNLRI(m["name:="][0], ttl, m["data:="][0])
+					nlri = bgp.NewDnsAAAARecordNLRI(name, ttl, m["data:="][0])
 				} else {
 					err = fmt.Errorf("AAAA record, data field is of the wrong size,"+
 						" expected 1, got %d", len(m["data:="]))
@@ -850,7 +855,7 @@ func ParsePath(rf bgp.RouteFamily, args []string) (*table.Path, error) {
 				for i:= 0; i < len(m["data:="]); i++ {
 					buffer.WriteString(m["data:="][i])
 				}
-				nlri = bgp.NewDnsPTRRecordNLRI(m["name:="][0], ttl, buffer.String())
+				nlri = bgp.NewDnsPTRRecordNLRI(name, ttl, buffer.String())
 			}
 		}
 	case bgp.RF_OPAQUE:
