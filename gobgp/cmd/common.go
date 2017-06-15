@@ -297,6 +297,8 @@ func checkAddressFamily(def bgp.RouteFamily) (bgp.RouteFamily, error) {
 		rf = bgp.RF_FS_L2_VPN
 	case "opaque":
 		rf = bgp.RF_OPAQUE
+	case "dns-unicast":
+		rf = bgp.RF_DNS_UC
 	case "":
 		rf = def
 	default:

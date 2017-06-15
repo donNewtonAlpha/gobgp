@@ -447,24 +447,35 @@ func (dest *Destination) implicitWithdraw() paths {
 }
 
 func (dest *Destination) computeKnownBestPath() (*Path, BestPathReason, error) {
-
+	log.WithFields(log.Fields{
+		"Topic": "Table",
+	}).Debugf("testing %d", 0)
 	// If we do not have any paths to this destination, then we do not have
 	// new best path.
 	if len(dest.knownPathList) == 0 {
+		log.WithFields(log.Fields{
+			"Topic": "Table",
+		}).Debugf("dest.knownPathList is %d", 0)
 		return nil, BPR_UNKNOWN, nil
 	}
 
 	log.WithFields(log.Fields{
 		"Topic": "Table",
-	}).Debugf("computeKnownBestPath known pathlist: %d", len(dest.knownPathList))
+	}).Debugf("computeKnownWTFBestPath known pathlist: %d", len(dest.knownPathList))
 
 	// We pick the first path as current best path. This helps in breaking
 	// tie between two new paths learned in one cycle for which best-path
 	// calculation steps lead to tie.
 	if len(dest.knownPathList) == 1 {
+		log.WithFields(log.Fields{
+			"Topic": "Table",
+		}).Debug("len(dest.knownPathList) == 1")
 		// If the first path has the invalidated next-hop, which evaluated by
 		// IGP, returns no path with the reason of the next-hop reachability.
 		if dest.knownPathList[0].IsNexthopInvalid {
+			log.WithFields(log.Fields{
+				"Topic": "Table",
+			}).Debug("dest.knownPathList[0].IsNexthopInvalid")
 			return nil, BPR_REACHABLE_NEXT_HOP, nil
 		}
 		return dest.knownPathList[0], BPR_ONLY_PATH, nil

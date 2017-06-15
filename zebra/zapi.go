@@ -186,6 +186,7 @@ const (
 	ROUTE_OLSR
 	ROUTE_BABEL
 	ROUTE_MAX
+	ROUTE_DNS
 )
 
 var routeTypeValueMap = map[string]ROUTE_TYPE{
@@ -202,6 +203,7 @@ var routeTypeValueMap = map[string]ROUTE_TYPE{
 	"hsls":    ROUTE_HSLS,
 	"olsr":    ROUTE_OLSR,
 	"babel":   ROUTE_BABEL,
+	"dns":     ROUTE_DNS,
 }
 
 func RouteTypeFromString(typ string) (ROUTE_TYPE, error) {
@@ -476,6 +478,8 @@ func (c *Client) SendRedistribute(t ROUTE_TYPE, vrfId uint16) error {
 }
 
 func (c *Client) SendRedistributeDelete(t ROUTE_TYPE) error {
+
+	fmt.Errorf("SendRedistributeDefault %d", t)
 
 	if t < ROUTE_MAX {
 		body := &RedistributeBody{

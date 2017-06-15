@@ -12,6 +12,7 @@
 // implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+// added DNS type
 
 package bgp
 
@@ -24,21 +25,39 @@ import (
 	"net"
 	"reflect"
 	"regexp"
+	//"runtime/debug"
 	"strconv"
 	"strings"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 const (
-	AFI_IP     = 1
-	AFI_IP6    = 2
-	AFI_L2VPN  = 25
-	AFI_OPAQUE = 16397
+	AFI_IP        = 1
+	AFI_IP6       = 2
+	AFI_NSAP      = 3
+	AFI_HDLC      = 4
+	AFI_BBN       = 5
+	AFI_802       = 6
+	AFI_E163      = 7
+	AFI_E164      = 8
+	AFI_F69       = 9
+	AFI_X121      = 10
+	AFI_IPX       = 11
+	AFI_APPPLE    = 12
+	AFI_DECNET    = 13
+	AFI_BANYAN    = 14
+	AFI_E164_NSAP = 15
+	AFI_DNS       = 16
+	AFI_L2VPN     = 25
+	AFI_OPAQUE    = 16397
 )
 
 const (
 	SAFI_UNICAST                  = 1
 	SAFI_MULTICAST                = 2
 	SAFI_MPLS_LABEL               = 4
+	SAFI_MCAST_VPN                = 5
 	SAFI_ENCAPSULATION            = 7
 	SAFI_VPLS                     = 65
 	SAFI_EVPN                     = 70
@@ -270,6 +289,7 @@ func (c *DefaultParameterCapability) DecodeFromBytes(data []byte) error {
 }
 
 func (c *DefaultParameterCapability) Serialize() ([]byte, error) {
+	//debug.PrintStack()
 	c.CapLen = uint8(len(c.CapValue))
 	buf := make([]byte, 2)
 	buf[0] = uint8(c.CapCode)
@@ -1025,6 +1045,7 @@ func (r *IPAddrPrefix) Serialize() ([]byte, error) {
 }
 
 func (r *IPAddrPrefix) AFI() uint16 {
+	log.Info("AFI Called")
 	return AFI_IP
 }
 
@@ -3855,7 +3876,6 @@ func (n *OpaqueNLRI) Len() int {
 func (n *OpaqueNLRI) String() string {
 	return fmt.Sprintf("%s", n.Key)
 }
-
 func (n *OpaqueNLRI) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Key   string `json:"key"`
@@ -3895,6 +3915,7 @@ const (
 	RF_IPv6_UC     RouteFamily = AFI_IP6<<16 | SAFI_UNICAST
 	RF_IPv4_MC     RouteFamily = AFI_IP<<16 | SAFI_MULTICAST
 	RF_IPv6_MC     RouteFamily = AFI_IP6<<16 | SAFI_MULTICAST
+	RF_DNS_UC      RouteFamily = AFI_DNS<<16 | SAFI_UNICAST
 	RF_IPv4_VPN    RouteFamily = AFI_IP<<16 | SAFI_MPLS_VPN
 	RF_IPv6_VPN    RouteFamily = AFI_IP6<<16 | SAFI_MPLS_VPN
 	RF_IPv4_VPN_MC RouteFamily = AFI_IP<<16 | SAFI_MPLS_VPN_MULTICAST
@@ -3919,6 +3940,7 @@ var AddressFamilyNameMap = map[RouteFamily]string{
 	RF_IPv6_UC:     "ipv6-unicast",
 	RF_IPv4_MC:     "ipv4-multicast",
 	RF_IPv6_MC:     "ipv6-multicast",
+	RF_DNS_UC:      "dns-unicast",
 	RF_IPv4_MPLS:   "ipv4-labelled-unicast",
 	RF_IPv6_MPLS:   "ipv6-labelled-unicast",
 	RF_IPv4_VPN:    "l3vpn-ipv4-unicast",
@@ -3943,6 +3965,7 @@ var AddressFamilyValueMap = map[string]RouteFamily{
 	AddressFamilyNameMap[RF_IPv6_UC]:     RF_IPv6_UC,
 	AddressFamilyNameMap[RF_IPv4_MC]:     RF_IPv4_MC,
 	AddressFamilyNameMap[RF_IPv6_MC]:     RF_IPv6_MC,
+	AddressFamilyNameMap[RF_DNS_UC]:      RF_DNS_UC,
 	AddressFamilyNameMap[RF_IPv4_MPLS]:   RF_IPv4_MPLS,
 	AddressFamilyNameMap[RF_IPv6_MPLS]:   RF_IPv6_MPLS,
 	AddressFamilyNameMap[RF_IPv4_VPN]:    RF_IPv4_VPN,
@@ -4001,6 +4024,8 @@ func NewPrefixFromRouteFamily(afi uint16, safi uint8) (prefix AddrPrefixInterfac
 		prefix = &FlowSpecIPv6VPN{FlowSpecNLRI{rf: RF_FS_IPv6_VPN}}
 	case RF_FS_L2_VPN:
 		prefix = &FlowSpecL2VPN{FlowSpecNLRI{rf: RF_FS_L2_VPN}}
+	case RF_DNS_UC:
+		prefix = &DnsNLRI{}
 	case RF_OPAQUE:
 		prefix = &OpaqueNLRI{}
 	default:
@@ -8000,6 +8025,9 @@ func (l *FlowSpecL2VPN) Flat() map[string]string {
 func (l *OpaqueNLRI) Flat() map[string]string {
 	return map[string]string{}
 }
+func (l *DnsNLRI) Flat() map[string]string {
+	return map[string]string{}
+}
 
 // Update a Flat representation by adding elements of the second
 // one. If two elements use same keys, values are separated with
@@ -8019,5 +8047,574 @@ func FlatUpdate(f1, f2 map[string]string) error {
 		return fmt.Errorf("Keys conflict")
 	} else {
 		return nil
+	}
+}
+
+type DnsRecordType uint16
+
+const (
+	A           DnsRecordType = 1
+	NS          DnsRecordType = 2
+	CNAME       DnsRecordType = 5
+	SOA         DnsRecordType = 6
+	PTR         DnsRecordType = 12
+	MX          DnsRecordType = 15
+	TXT         DnsRecordType = 16
+	RP          DnsRecordType = 17
+	AFSDB       DnsRecordType = 18
+	SIG         DnsRecordType = 24
+	KEY         DnsRecordType = 25
+	AAAA        DnsRecordType = 28
+	LOC         DnsRecordType = 29
+	SRV         DnsRecordType = 33
+	NAPTR       DnsRecordType = 35
+	KX          DnsRecordType = 36
+	CERT        DnsRecordType = 37
+	DNAME       DnsRecordType = 39
+	OPT         DnsRecordType = 41
+	APL         DnsRecordType = 42
+	DS          DnsRecordType = 43
+	SSHFP       DnsRecordType = 44
+	IPSECKEY    DnsRecordType = 45
+	RRSIG       DnsRecordType = 46
+	NSEC        DnsRecordType = 47
+	DNSKEY      DnsRecordType = 48
+	DHCID       DnsRecordType = 49
+	NSEC3       DnsRecordType = 50
+	NSEC3PARAM  DnsRecordType = 51
+	TLSA        DnsRecordType = 52
+	HIP         DnsRecordType = 55
+	CDS         DnsRecordType = 59
+	CDNSKEY     DnsRecordType = 60
+	TKEY        DnsRecordType = 249
+	TSIG        DnsRecordType = 250
+	IXFR        DnsRecordType = 251
+	AXFR        DnsRecordType = 252
+	URI         DnsRecordType = 256
+	CAA         DnsRecordType = 257
+	TA          DnsRecordType = 32768
+	DLV         DnsRecordType = 32769
+	DNS_UNKNOWN DnsRecordType = 0
+)
+
+func GetDnsRecordTypeName(dnsRecordType DnsRecordType) string {
+	switch dnsRecordType {
+	case A:
+		return "A"
+	case NS:
+		return "NS"
+	case CNAME:
+		return "CNAME"
+	case SOA:
+		return "SOA"
+	case PTR:
+		return "PTR"
+	case MX:
+		return "MX"
+	case TXT:
+		return "TXT"
+	case RP:
+		return "RP"
+	case AFSDB:
+		return "AFSDB"
+	case SIG:
+		return "SIG"
+	case KEY:
+		return "KEY"
+	case AAAA:
+		return "AAAA"
+	case LOC:
+		return "LOC"
+	case SRV:
+		return "SRV"
+	case NAPTR:
+		return "NAPTR"
+	case KX:
+		return "KX"
+	case CERT:
+		return "CERT"
+	case DNAME:
+		return "DNAME"
+	case APL:
+		return "APL"
+	case DS:
+		return "DS"
+	case SSHFP:
+		return "SSHFP"
+	case IPSECKEY:
+		return "IPSECKEY"
+	case RRSIG:
+		return "RRSIG"
+	case NSEC:
+		return "NSEC"
+	case DNSKEY:
+		return "DNSKEY"
+	case DHCID:
+		return "DHCID"
+	case NSEC3:
+		return "NSEC3"
+	case NSEC3PARAM:
+		return "NSEC3PARAM"
+	case TLSA:
+		return "TLSA"
+	case HIP:
+		return "HIP"
+	case CDS:
+		return "CDS"
+	case CDNSKEY:
+		return "CDNSKEY"
+	case TKEY:
+		return "TKEY"
+	case TSIG:
+		return "TSIG"
+	case URI:
+		return "URI"
+	case CAA:
+		return "CAA"
+	case TA:
+		return "TA"
+	case DLV:
+		return "DLV"
+	case OPT:
+		return "OPT"
+	case IXFR:
+		return "IXFR"
+	case AXFR:
+		return "AXFR"
+
+	}
+	return ""
+}
+func GetDnsRecordType(name string) DnsRecordType {
+	newName := strings.ToUpper(name)
+	switch newName {
+	case "A":
+		return A
+	case "NS":
+		return NS
+	case "CNAME":
+		return CNAME
+	case "SOA":
+		return SOA
+	case "PTR":
+		return PTR
+	case "MX":
+		return MX
+	case "TXT":
+		return TXT
+	case "RP":
+		return RP
+	case "AFSDB":
+		return AFSDB
+	case "SIG":
+		return SIG
+	case "KEY":
+		return KEY
+	case "AAAA":
+		return AAAA
+	case "LOC":
+		return LOC
+	case "SRV":
+		return SRV
+	case "NAPTR":
+		return NAPTR
+	case "KX":
+		return KX
+	case "CERT":
+		return CERT
+	case "DNAME":
+		return DNAME
+	case "APL":
+		return APL
+	case "DS":
+		return DS
+	case "SSHFP":
+		return SSHFP
+	case "IPSECKEY":
+		return IPSECKEY
+	case "RRSIG":
+		return RRSIG
+	case "NSEC":
+		return NSEC
+	case "DNSKEY":
+		return DNSKEY
+	case "DHCID":
+		return DHCID
+	case "NSEC3":
+		return NSEC3
+	case "NSEC3PARAM":
+		return NSEC3PARAM
+	case "TLSA":
+		return TLSA
+	case "HIP":
+		return HIP
+	case "CDS":
+		return CDS
+	case "CDNSKEY":
+		return CDNSKEY
+	case "TKEY":
+		return TKEY
+	case "TSIG":
+		return TSIG
+	case "URI":
+		return URI
+	case "CAA":
+		return CAA
+	case "TA":
+		return TA
+	case "DLV":
+		return DLV
+	case "OPT":
+		return OPT
+	case "IXFR":
+		return IXFR
+	case "AXFR":
+		return AXFR
+	}
+	return DNS_UNKNOWN
+}
+
+type RData interface {
+	DecodeSubTypeFromBytes(data []byte) error
+	SerializeSubType() ([]byte, error)
+	String() string
+}
+
+/************* A Record ******/
+type ARecord struct {
+	Ip net.IP
+}
+
+func (a *ARecord) DecodeSubTypeFromBytes(data []byte) error {
+	a.Ip = net.IP(data)
+	return nil
+}
+func (a *ARecord) SerializeSubType() ([]byte, error) {
+	return []byte(a.Ip), nil
+}
+func (a *ARecord) String() string {
+	return fmt.Sprint(a.Ip)
+}
+
+/*************A Record ******/
+
+/*************AAAA Record *****/
+type AAAARecord struct {
+	Ip net.IP
+}
+
+func (a *AAAARecord) DecodeSubTypeFromBytes(data []byte) error {
+	a.Ip = net.IP(data)
+	return nil
+}
+func (a *AAAARecord) SerializeSubType() ([]byte, error) {
+	return []byte(a.Ip), nil
+}
+func (a *AAAARecord) String() string {
+	return fmt.Sprint(a.Ip)
+}
+
+/*************AAAA Record *****/
+
+/*************PTR Record ******/
+type PTRRecord struct {
+	PTRDName string
+}
+
+func (p *PTRRecord) DecodeSubTypeFromBytes(data []byte) error {
+	p.PTRDName = string(data)
+	return nil
+}
+func (p *PTRRecord) SerializeSubType() ([]byte, error) {
+	return []byte(p.PTRDName), nil
+}
+func (p *PTRRecord) String() string {
+	return p.PTRDName
+}
+
+/*************PTR Record ******/
+
+/*************SRV Record ******/
+
+type SRVRecord struct {
+	Priority uint16
+	Weight   uint16
+	Port     uint16
+	Target   string
+}
+
+func (s *SRVRecord) DecodeSubTypeFromBytes(data []byte) error {
+	s.Priority = binary.BigEndian.Uint16(data[0:2])
+	s.Weight = binary.BigEndian.Uint16(data[2:4])
+	s.Port = binary.BigEndian.Uint16(data[4:6])
+	s.Target = string(data[6:])
+	return nil
+}
+
+func (s *SRVRecord) SerializeSubType() ([]byte, error) {
+	buf := make([]byte, 2)
+	binary.BigEndian.PutUint16(buf, s.Priority)
+
+	weight := make([]byte, 2)
+	binary.BigEndian.PutUint16(weight, s.Weight)
+	buf = append(buf, weight...)
+
+	port := make([]byte, 2)
+	binary.BigEndian.PutUint16(port, s.Port)
+	buf = append(buf, port...)
+
+	buf = append(buf, s.Target...)
+	return buf, nil
+}
+func (s *SRVRecord) String() string {
+	output := fmt.Sprintf("%d %d %d %s", s.Priority, s.Weight, s.Port, s.Target)
+	return output
+}
+
+/*************SRV Record ******/
+
+/*************TXT Record ******/
+type TXTRecord struct {
+	Text string
+}
+
+func (t *TXTRecord) DecodeSubTypeFromBytes(data []byte) error {
+
+	t.Text = string(data)
+
+	return nil
+}
+func (t *TXTRecord) SerializeSubType() ([]byte, error) {
+	return []byte(t.Text), nil
+}
+func (t *TXTRecord) String() string {
+	return t.Text
+}
+
+/*************TXT Record ******/
+
+/*************URI Record ******/
+type URIRecord struct {
+	Priority uint16
+	Weight   uint16
+	Target   string
+}
+
+func (u *URIRecord) DecodeSubTypeFromBytes(data []byte) error {
+	u.Priority = binary.BigEndian.Uint16(data[0:2])
+	u.Weight = binary.BigEndian.Uint16(data[2:4])
+	u.Target = string(data[4:])
+	return nil
+}
+func (u *URIRecord) SerializeSubType() ([]byte, error) {
+	buf := make([]byte, 2)
+	binary.BigEndian.PutUint16(buf, u.Priority)
+	weight := make([]byte, 2)
+	binary.BigEndian.PutUint16(weight, u.Weight)
+	buf = append(buf, weight...)
+	buf = append(buf, u.Target...)
+	return buf, nil
+}
+func (u *URIRecord) String() string {
+	output := fmt.Sprintf("%d %d %s", u.Priority, u.Weight, u.Target)
+	return output
+}
+
+/*************URI Record ******/
+
+func (n *DnsNLRI) DecodeFromBytes(data []byte) error {
+	nameLen := binary.BigEndian.Uint16(data[0:2])
+	n.Name = string(data[2 : 2+nameLen])
+	n.Type = DnsRecordType(binary.BigEndian.Uint16(data[2+nameLen : 4+nameLen]))
+	n.Class = uint16(1)
+	n.TTL = binary.BigEndian.Uint32(data[4+nameLen : 8+nameLen])
+	n.Rdlength = binary.BigEndian.Uint16(data[8+nameLen : 10+nameLen])
+	switch n.Type {
+	case A:
+		aRec := &ARecord{}
+		aRec.DecodeSubTypeFromBytes(data[10+nameLen:])
+		n.Data = aRec
+	case AAAA:
+		aaaaRec := &AAAARecord{}
+		aaaaRec.DecodeSubTypeFromBytes(data[10+nameLen:])
+		n.Data = aaaaRec
+	case PTR:
+		ptrRec := &PTRRecord{}
+		ptrRec.DecodeSubTypeFromBytes(data[10+nameLen:])
+		n.Data = ptrRec
+	case SRV:
+		n.Data = &SRVRecord{}
+		n.Data.DecodeSubTypeFromBytes(data[10+nameLen:])
+	case TXT:
+		txt := &TXTRecord{}
+		txt.DecodeSubTypeFromBytes(data[10+nameLen:])
+		n.Data = txt
+	case URI:
+		n.Data = &URIRecord{}
+		n.Data.DecodeSubTypeFromBytes(data[10+nameLen:])
+	}
+	return nil
+}
+
+func (n *DnsNLRI) Serialize() ([]byte, error) {
+	buf := make([]byte, 2)
+	nameLen := uint16(len(n.Name))
+	binary.BigEndian.PutUint16(buf, nameLen)
+	buf = append(buf, n.Name...)
+
+	rType := make([]byte, 2)
+	binary.BigEndian.PutUint16(rType, uint16(n.Type))
+	buf = append(buf, rType...)
+
+	ttl := make([]byte, 4)
+	binary.BigEndian.PutUint32(ttl, n.TTL)
+	buf = append(buf, ttl...)
+
+	rdLen := make([]byte, 2)
+	binary.BigEndian.PutUint16(rdLen, n.Rdlength)
+	buf = append(buf, rdLen...)
+
+	var data []byte
+	switch n.Type {
+	case A:
+		data, _ = n.Data.(*ARecord).SerializeSubType()
+	case AAAA:
+		data, _ = n.Data.(*AAAARecord).SerializeSubType()
+	case PTR:
+		data, _ = n.Data.(*PTRRecord).SerializeSubType()
+	case SRV:
+		data, _ = n.Data.(*SRVRecord).SerializeSubType()
+	case TXT:
+		data, _ = n.Data.(*TXTRecord).SerializeSubType()
+	case URI:
+		data, _ = n.Data.(*URIRecord).SerializeSubType()
+	}
+	buf = append(buf, data...)
+	return buf, nil
+
+}
+func (n *DnsNLRI) AFI() uint16 {
+	return AFI_DNS
+}
+
+func (n *DnsNLRI) SAFI() uint8 {
+	return SAFI_UNICAST
+}
+func (n *DnsNLRI) String() string {
+	var output string
+	switch n.Type {
+	case A:
+		output = n.Data.(*ARecord).String()
+	case AAAA:
+		output = n.Data.(*AAAARecord).String()
+	case PTR:
+		output = n.Data.(*PTRRecord).String()
+	case SRV:
+		output = n.Data.(*SRVRecord).String()
+	case TXT:
+		output = n.Data.(*TXTRecord).String()
+	case URI:
+		output = n.Data.(*URIRecord).String()
+	}
+	fullString := fmt.Sprintf("%s IN %s %d %s", n.Name, GetDnsRecordTypeName(n.Type), n.TTL, output)
+	return fullString
+}
+func (n *DnsNLRI) Len() int {
+	return len(n.Name) + 10 + int(n.Rdlength)
+}
+
+func (n *DnsNLRI) MarshalJSON() ([]byte, error) {
+	return json.Marshal(n)
+}
+
+type DnsNLRI struct {
+	Name     string
+	Type     DnsRecordType
+	Class    uint16
+	TTL      uint32
+	Rdlength uint16
+	Data     RData
+}
+
+func NewDnsARecordNLRI(name string, ttl int, address string) *DnsNLRI {
+	ip := net.ParseIP(address).To4()
+	aRecord := &ARecord{ip}
+	nlri := DnsNLRI{
+		Name:     name,
+		Type:     A,
+		Class:    uint16(1),
+		TTL:      uint32(ttl),
+		Rdlength: uint16(4),
+		Data:     aRecord,
+	}
+	return &nlri
+}
+func NewDnsAAAARecordNLRI(name string, ttl int, address string) *DnsNLRI {
+	ip := net.ParseIP(address)
+	aRecord := &ARecord{ip}
+	nlri := DnsNLRI{
+		Name:     name,
+		Type:     A,
+		Class:    uint16(1),
+		TTL:      uint32(ttl),
+		Rdlength: uint16(4),
+		Data:     aRecord,
+	}
+	return &nlri
+}
+func NewDnsPTRRecordNLRI(name string, ttl int, ptrDName string) *DnsNLRI {
+	ptrRecord := &PTRRecord{ptrDName}
+	nlri := DnsNLRI{
+		Name:     name,
+		Type:     A,
+		Class:    uint16(1),
+		TTL:      uint32(ttl),
+		Rdlength: uint16(4),
+		Data:     ptrRecord,
+	}
+	return &nlri
+}
+func NewDnsSRVRecordNLRI(name string, ttl int, priority int, weight int, port int, target string) *DnsNLRI {
+	srvRecord := &SRVRecord{
+		Priority: uint16(priority),
+		Weight:   uint16(weight),
+		Port:     uint16(port),
+		Target:   target,
+	}
+	myLen := len(target) + 6
+	nrli := DnsNLRI{
+		Name:     name,
+		Type:     SRV,
+		Class:    uint16(1),
+		TTL:      uint32(ttl),
+		Rdlength: uint16(myLen),
+		Data:     srvRecord,
+	}
+	return &nrli
+}
+func NewDnsTXTRecordNLRI(name string, ttl int, text string) *DnsNLRI {
+	txtRecord := &TXTRecord{text}
+	return &DnsNLRI{
+		Name:     name,
+		Type:     TXT,
+		Class:    uint16(1),
+		TTL:      uint32(ttl),
+		Rdlength: uint16(len(text)),
+		Data:     txtRecord,
+	}
+}
+func NewDnsURIRecordNLRI(name string, ttl int, priority int, weight int, target string) *DnsNLRI {
+	uriRecord := &URIRecord{
+		Priority: uint16(priority),
+		Weight:   uint16(weight),
+		Target:   target,
+	}
+	return &DnsNLRI{
+		Name:     name,
+		Type:     URI,
+		Class:    uint16(1),
+		TTL:      uint32(ttl),
+		Rdlength: uint16(len(target) + 4),
+		Data:     uriRecord,
 	}
 }
