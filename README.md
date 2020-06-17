@@ -6,6 +6,7 @@
 GoBGP is an open source BGP implementation designed from scratch for
 modern environment and implemented in a modern programming language,
 [the Go Programming Language](http://golang.org/).
+Our fork implements a prototype for using BGP to distribute DNS data.
 
 ## Getting started
 
